@@ -16,6 +16,8 @@
   "main": "out/main.js",
   "scripts": {
     "build": "tsc",
+    "prepackage": "npm run build",
+    "package": "ncc build --source-map --quiet",
     "prerun": "npm run build",
     "run": "node .",
     "format": "prettier --write .",
@@ -23,10 +25,12 @@
   },
   "devDependencies": {
     "@tsconfig/node16": "1.0.3",
+    "@vercel/ncc": "0.34.0",
     "prettier": "2.7.1",
     "typescript": "4.7.4"
   },
   "dependencies": {
+    "@actions/core": "1.9.0",
     "@types/node": "16.11.45"
   }
 }

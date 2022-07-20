@@ -1,5 +1,7 @@
+import * as core from "@actions/core";
+
 function main() {
-  console.log("Hello, World");
+  core.notice("Hello, World");
 }
 
 main();
