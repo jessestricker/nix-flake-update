@@ -1,0 +1,16 @@
+{
+  "name": "nix-update-action",
+  "version": "0.1.0",
+  "description": "Keep your Nix Flake inputs up-to-date with this GitHub Action!",
+  "author": "Jesse Stricker",
+  "license": "MIT",
+  "preview": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jessestricker/nix-update-action.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jessestricker/nix-update-action/issues"
+  },
+  "homepage": "https://github.com/jessestricker/nix-update-action#readme"
+}
