@@ -16,6 +16,6 @@ jobs:
         with:
           nix_conf: experimental-features = nix-command flakes
       - name: Install dependencies
-        run: nix develop -i -c true
+        run: nix develop -i -c npm ci
       - name: Check formatting
         run: nix develop -i -c npm run format-check
