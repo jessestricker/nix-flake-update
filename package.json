@@ -14,7 +14,8 @@
   },
   "homepage": "https://github.com/jessestricker/nix-update-action#readme",
   "scripts": {
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "format-check": "prettier --check ."
   },
   "devDependencies": {
     "prettier": "2.7.1"
