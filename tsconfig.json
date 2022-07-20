@@ -1,4 +1,4 @@
 {
   "extends": "@tsconfig/node16/tsconfig.json",
-  "compilerOptions": { "outDir": "out" }
+  "compilerOptions": { "rootDir": "src", "outDir": "out" }
 }
