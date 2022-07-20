@@ -13,7 +13,7 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       devShells.default = pkgs.mkShell {
-        packages = with pkgs; [nodejs];
+        packages = with pkgs; [nodejs-16_x];
       };
 
       formatter = pkgs.alejandra;
