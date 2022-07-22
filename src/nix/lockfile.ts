@@ -1,6 +1,6 @@
-import path from "path";
-import process from "process";
-import fs from "fs/promises";
+import * as fs from "fs/promises";
+import * as path from "path";
+import * as process from "process";
 import * as rt from "runtypes";
 
 namespace Runtypes {
