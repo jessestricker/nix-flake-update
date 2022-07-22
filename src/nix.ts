@@ -1,6 +1,8 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import * as process from "process";
+
+import * as exec from "@actions/exec";
 import * as rt from "runtypes";
 
 const NodeLabel = rt.String;
@@ -69,4 +71,24 @@ export async function loadLockfile(): Promise<Lockfile> {
   const filePath = path.join(process.cwd(), FILE_NAME);
   const fileContent = await fs.readFile(filePath, { encoding: "utf-8" });
   return parseLockfile(fileContent);
+}
+
+/**
+ * Updates the locked flake references in the lockfile from the current working directory.
+ */
+export async function updateLockfile() {
+  const output = await exec.getExecOutput("nix", ["flake", "update"], {
+    silent: true,
+    ignoreReturnCode: true,
+  });
+  if (output.exitCode !== 0) {
+    let msg = `The command 'nix flake update' failed with exit code ${output.exitCode}`;
+    if (output.stdout !== "") {
+      msg += `\nstandard output:\n${output.stdout}`;
+    }
+    if (output.stderr !== "") {
+      msg += `\nstandard error:\n${output.stderr}`;
+    }
+    throw new Error(msg);
+  }
 }

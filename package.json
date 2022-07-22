@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@actions/core": "1.9.0",
+    "@actions/exec": "1.1.1",
     "runtypes": "6.5.1"
   }
 }
