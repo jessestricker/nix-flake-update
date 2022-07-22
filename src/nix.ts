@@ -51,7 +51,7 @@ export type Lockfile = rt.Static<typeof Lockfile>;
 /**
  * Parses the lockfile from a JSON string.
  */
-export function parse(text: string): Lockfile {
+export function parseLockfile(text: string): Lockfile {
   const obj = JSON.parse(text);
   const lockfile = Lockfile.check(obj);
   if (lockfile.version !== VERSION) {
@@ -65,8 +65,8 @@ export function parse(text: string): Lockfile {
 /**
  * Loads the lockfile from the current working directory.
  */
-export async function loadCurrent(): Promise<Lockfile> {
+export async function loadLockfile(): Promise<Lockfile> {
   const filePath = path.join(process.cwd(), FILE_NAME);
   const fileContent = await fs.readFile(filePath, { encoding: "utf-8" });
-  return parse(fileContent);
+  return parseLockfile(fileContent);
 }
