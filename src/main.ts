@@ -1,7 +1,17 @@
-import * as core from "@actions/core";
+import * as util from "util";
 
-function main() {
-  core.notice("Hello, World");
+import * as core from "@actions/core";
+import * as nix from "./nix";
+
+async function main() {
+  // read current lockfile
+  const oldLockfile = await nix.loadLockfile();
+  core.info("old lockfile = \n" + util.inspect(oldLockfile, { depth: null }));
 }
 
-main();
+try {
+  main();
+} catch (error) {
+  const errorMsg = error instanceof Error ? error : "unknown error type";
+  core.setFailed(errorMsg);
+}
