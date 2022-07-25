@@ -5355,9 +5355,14 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.flakeUpdate = void 0;
+const core = __importStar(__nccwpck_require__(2186));
 const util = __importStar(__nccwpck_require__(6568));
 async function flakeUpdate(dir) {
-    await util.runCommand("nix", ["flake", "update"], dir);
+    core.info("Updating the flake inputs...");
+    const output = await util.runCommand("nix", ["flake", "update"], dir);
+    core.group("Output of `nix flake update`", async () => {
+        core.info(output.stderr);
+    });
 }
 exports.flakeUpdate = flakeUpdate;
 
