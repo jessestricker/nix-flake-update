@@ -75,11 +75,13 @@ export async function load(dir: string): Promise<Lockfile> {
 export function getDependencyNodes(
   lockfile: Lockfile
 ): Map<string, DependencyNode> {
-  const nodes = new Map();
+  const nodes = new Map<string, DependencyNode>();
   for (const nodeLabel in lockfile.nodes) {
-    if (nodeLabel !== lockfile.root) {
-      nodes.set(nodeLabel, lockfile.nodes[nodeLabel]);
+    if (nodeLabel === lockfile.root) {
+      continue;
     }
+    const node = lockfile.nodes[nodeLabel];
+    nodes.set(nodeLabel, DependencyNode.check(node));
   }
   return nodes;
 }

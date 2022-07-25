@@ -5491,9 +5491,11 @@ exports.load = load;
 function getDependencyNodes(lockfile) {
     const nodes = new Map();
     for (const nodeLabel in lockfile.nodes) {
-        if (nodeLabel !== lockfile.root) {
-            nodes.set(nodeLabel, lockfile.nodes[nodeLabel]);
+        if (nodeLabel === lockfile.root) {
+            continue;
         }
+        const node = lockfile.nodes[nodeLabel];
+        nodes.set(nodeLabel, DependencyNode.check(node));
     }
     return nodes;
 }
