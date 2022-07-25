@@ -5299,13 +5299,20 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const util = __importStar(__nccwpck_require__(3837));
 const core = __importStar(__nccwpck_require__(2186));
-const nix = __importStar(__nccwpck_require__(4535));
+const nixCommand = __importStar(__nccwpck_require__(5566));
+const nixLockfile = __importStar(__nccwpck_require__(5814));
+const util = __importStar(__nccwpck_require__(6568));
 async function main() {
+    const projectDir = process.cwd();
     // read current lockfile
-    const oldLockfile = await nix.loadLockfile();
-    core.info("old lockfile = \n" + util.inspect(oldLockfile, { depth: null }));
+    const oldLockfile = await nixLockfile.load(projectDir);
+    util.printDebug("old lockfile", oldLockfile);
+    // update flake inputs
+    await nixCommand.flakeUpdate(projectDir);
+    // read updated lockfile
+    const newLockfile = await nixLockfile.load(projectDir);
+    util.printDebug("new lockfile", newLockfile);
 }
 try {
     main();
@@ -5318,7 +5325,7 @@ catch (error) {
 
 /***/ }),
 
-/***/ 4535:
+/***/ 5566:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -5347,84 +5354,183 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.updateLockfile = exports.loadLockfile = exports.parseLockfile = void 0;
+exports.flakeUpdate = void 0;
+const util = __importStar(__nccwpck_require__(6568));
+async function flakeUpdate(dir) {
+    await util.runCommand("nix", ["flake", "update"], dir);
+}
+exports.flakeUpdate = flakeUpdate;
+
+
+/***/ }),
+
+/***/ 5814:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getFlakeRefUrl = exports.getDependencyNode = exports.getRootNode = exports.load = exports.parse = void 0;
 const fs = __importStar(__nccwpck_require__(3292));
 const path = __importStar(__nccwpck_require__(1017));
-const process = __importStar(__nccwpck_require__(7282));
-const exec = __importStar(__nccwpck_require__(1514));
-const rt = __importStar(__nccwpck_require__(5568));
-const NodeLabel = rt.String;
-const InputName = rt.String;
-const Inputs = rt.Dictionary(NodeLabel, InputName);
-const GitHubFlakeRef = rt.Record({
-    type: rt.Literal("github"),
-    owner: rt.String,
-    repo: rt.String,
-    ref: rt.Optional(rt.String),
-    rev: rt.Optional(rt.String),
+const runtypes_1 = __nccwpck_require__(5568);
+const InputName = runtypes_1.String.withBrand("InputName");
+const NodeLabel = runtypes_1.String.withBrand("NodeLabel");
+const CommitHash = runtypes_1.String.withBrand("CommitHash");
+const Inputs = (0, runtypes_1.Dictionary)(NodeLabel, InputName);
+const GitHubFlakeRef = (0, runtypes_1.Record)({
+    type: (0, runtypes_1.Literal)("github"),
+    owner: runtypes_1.String,
+    repo: runtypes_1.String,
+    ref: (0, runtypes_1.Optional)(runtypes_1.String),
+    rev: (0, runtypes_1.Optional)(CommitHash),
 });
-const FlakeRef = rt.Union(GitHubFlakeRef);
-const GitHubLockedFlakeRef = rt.Record({
-    type: rt.Literal("github"),
-    owner: rt.String,
-    repo: rt.String,
-    rev: rt.String,
+const UnsupportedFlakeRef = (0, runtypes_1.Dictionary)(runtypes_1.String, runtypes_1.String);
+const FlakeRef = (0, runtypes_1.Union)(GitHubFlakeRef, UnsupportedFlakeRef);
+const RootNode = (0, runtypes_1.Record)({
+    inputs: Inputs,
 });
-const LockedFlakeRef = rt.Union(GitHubLockedFlakeRef);
-const Node = rt.Record({
-    inputs: rt.Optional(Inputs),
-    original: rt.Optional(FlakeRef),
-    locked: rt.Optional(LockedFlakeRef),
-    flake: rt.Optional(rt.Boolean),
+const DependencyNode = (0, runtypes_1.Record)({
+    inputs: (0, runtypes_1.Optional)(Inputs),
+    locked: FlakeRef,
+    original: FlakeRef,
+    flake: (0, runtypes_1.Optional)(runtypes_1.Boolean),
 });
-const Lockfile = rt.Record({
-    version: rt.Number,
-    root: rt.String,
-    nodes: rt.Dictionary(Node, NodeLabel),
+const Node = (0, runtypes_1.Union)(RootNode, DependencyNode);
+const Lockfile = (0, runtypes_1.Record)({
+    version: runtypes_1.Number,
+    root: NodeLabel,
+    nodes: (0, runtypes_1.Dictionary)(Node, NodeLabel),
 });
+const SUPPORTED_VERSION = 7;
 const FILE_NAME = "flake.lock";
-const VERSION = 7;
-/**
- * Parses the lockfile from a JSON string.
- */
-function parseLockfile(text) {
-    const obj = JSON.parse(text);
-    const lockfile = Lockfile.check(obj);
-    if (lockfile.version !== VERSION) {
-        throw new Error(`The lockfile has an incompatible version: expected ${VERSION}, got ${lockfile.version}`);
+function parse(json) {
+    const jsonObj = JSON.parse(json);
+    const lockfile = Lockfile.check(jsonObj);
+    if (lockfile.version !== SUPPORTED_VERSION) {
+        throw new Error("The lockfile is of an unsupported version.");
     }
     return lockfile;
 }
-exports.parseLockfile = parseLockfile;
-/**
- * Loads the lockfile from the current working directory.
- */
-async function loadLockfile() {
-    const filePath = path.join(process.cwd(), FILE_NAME);
-    const fileContent = await fs.readFile(filePath, { encoding: "utf-8" });
-    return parseLockfile(fileContent);
+exports.parse = parse;
+async function load(dir) {
+    const filePath = path.join(dir, FILE_NAME);
+    const fileText = await fs.readFile(filePath, { encoding: "utf-8" });
+    const lockfile = parse(fileText);
+    return lockfile;
 }
-exports.loadLockfile = loadLockfile;
-/**
- * Updates the locked flake references in the lockfile from the current working directory.
- */
-async function updateLockfile() {
-    const output = await exec.getExecOutput("nix", ["flake", "update"], {
+exports.load = load;
+function getRootNode(lockfile) {
+    const node = lockfile.nodes[lockfile.root];
+    return RootNode.check(node);
+}
+exports.getRootNode = getRootNode;
+function getDependencyNode(lockfile, inputName) {
+    const nodeLabel = getRootNode(lockfile).inputs[inputName];
+    const node = lockfile.nodes[nodeLabel];
+    return DependencyNode.check(node);
+}
+exports.getDependencyNode = getDependencyNode;
+function getFlakeRefUrl(flakeRef) {
+    if (GitHubFlakeRef.guard(flakeRef)) {
+        let urlBase = `github:${flakeRef.owner}/${flakeRef.repo}`;
+        const revOrRef = flakeRef.rev || flakeRef.ref;
+        if (revOrRef !== undefined) {
+            urlBase += "/" + revOrRef;
+        }
+        return urlBase;
+    }
+    throw new TypeError("unsupported flake reference type");
+}
+exports.getFlakeRefUrl = getFlakeRefUrl;
+
+
+/***/ }),
+
+/***/ 6568:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.printDebug = exports.runCommand = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const exec = __importStar(__nccwpck_require__(1514));
+const util = __importStar(__nccwpck_require__(3837));
+async function runCommand(cmd, args, dir) {
+    const output = await exec.getExecOutput(cmd, args, {
+        cwd: dir,
         silent: true,
         ignoreReturnCode: true,
     });
-    if (output.exitCode !== 0) {
-        let msg = `The command 'nix flake update' failed with exit code ${output.exitCode}`;
-        if (output.stdout !== "") {
-            msg += `\nstandard output:\n${output.stdout}`;
-        }
-        if (output.stderr !== "") {
-            msg += `\nstandard error:\n${output.stderr}`;
-        }
-        throw new Error(msg);
+    if (output.exitCode === 0) {
+        return { stdout: output.stdout, stderr: output.stderr };
     }
+    let cmdLine = cmd;
+    if (args.length !== 0) {
+        cmdLine += " " + args.join(" ");
+    }
+    let msg = `The command '${cmdLine}' failed with exit code ${output.exitCode}`;
+    if (output.stdout !== "") {
+        msg += `\nstandard output:\n${output.stdout}`;
+    }
+    if (output.stderr !== "") {
+        msg += `\nstandard error:\n${output.stderr}`;
+    }
+    throw new Error(msg);
 }
-exports.updateLockfile = updateLockfile;
+exports.runCommand = runCommand;
+function printDebug(valueName, value) {
+    const valueStr = util.inspect(value, { depth: null });
+    core.debug(`${valueName} = ${valueStr}`);
+}
+exports.printDebug = printDebug;
 
 
 /***/ }),
@@ -5506,14 +5612,6 @@ module.exports = require("os");
 
 "use strict";
 module.exports = require("path");
-
-/***/ }),
-
-/***/ 7282:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("process");
 
 /***/ }),
 
