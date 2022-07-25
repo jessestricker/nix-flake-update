@@ -5313,6 +5313,49 @@ async function main() {
     // read updated lockfile
     const newLockfile = await nixLockfile.load(projectDir);
     util.printDebug("new lockfile", newLockfile);
+    // get changes between lockfiles
+    const changes = compareLockfiles(oldLockfile, newLockfile);
+    util.printDebug("changes", changes);
+}
+function compareLockfiles(oldLockfile, newLockfile) {
+    // inputs are matched by node label
+    const oldNodes = nixLockfile.getDependencyNodes(oldLockfile);
+    const newNodes = nixLockfile.getDependencyNodes(newLockfile);
+    const changes = { added: [], updated: [], removed: [] };
+    // check for updated and removed nodes
+    for (const [nodeLabel, oldNode] of oldNodes) {
+        const newNode = newNodes.get(nodeLabel);
+        if (newNode === undefined) {
+            // removed node
+            changes.removed.push({
+                nodeLabel: nodeLabel,
+                original: oldNode.original,
+                locked: oldNode.locked,
+            });
+        }
+        else {
+            // updated node
+            changes.updated.push({
+                nodeLabel: nodeLabel,
+                oldOriginal: oldNode.original,
+                newOriginal: newNode.original,
+                oldLocked: oldNode.locked,
+                newLocked: newNode.locked,
+            });
+        }
+    }
+    // check for added nodes
+    for (const [nodeLabel, newNode] of newNodes) {
+        if (!(nodeLabel in oldNodes)) {
+            // added node
+            changes.added.push({
+                nodeLabel: nodeLabel,
+                original: newNode.original,
+                locked: newNode.locked,
+            });
+        }
+    }
+    return changes;
 }
 try {
     main();
@@ -5398,7 +5441,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getFlakeRefUrl = exports.getDependencyNode = exports.getRootNode = exports.load = exports.parse = void 0;
+exports.getFlakeRefUrl = exports.getDependencyNodes = exports.load = exports.parse = void 0;
 const fs = __importStar(__nccwpck_require__(3292));
 const path = __importStar(__nccwpck_require__(1017));
 const runtypes_1 = __nccwpck_require__(5568);
@@ -5445,17 +5488,16 @@ async function load(dir) {
     return lockfile;
 }
 exports.load = load;
-function getRootNode(lockfile) {
-    const node = lockfile.nodes[lockfile.root];
-    return RootNode.check(node);
+function getDependencyNodes(lockfile) {
+    const nodes = new Map();
+    for (const nodeLabel in lockfile.nodes) {
+        if (nodeLabel !== lockfile.root) {
+            nodes.set(nodeLabel, lockfile.nodes[nodeLabel]);
+        }
+    }
+    return nodes;
 }
-exports.getRootNode = getRootNode;
-function getDependencyNode(lockfile, inputName) {
-    const nodeLabel = getRootNode(lockfile).inputs[inputName];
-    const node = lockfile.nodes[nodeLabel];
-    return DependencyNode.check(node);
-}
-exports.getDependencyNode = getDependencyNode;
+exports.getDependencyNodes = getDependencyNodes;
 function getFlakeRefUrl(flakeRef) {
     if (GitHubFlakeRef.guard(flakeRef)) {
         let urlBase = `github:${flakeRef.owner}/${flakeRef.repo}`;

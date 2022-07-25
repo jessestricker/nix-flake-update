@@ -72,18 +72,16 @@ export async function load(dir: string): Promise<Lockfile> {
   return lockfile;
 }
 
-export function getRootNode(lockfile: Lockfile): RootNode {
-  const node = lockfile.nodes[lockfile.root];
-  return RootNode.check(node);
-}
-
-export function getDependencyNode(
-  lockfile: Lockfile,
-  inputName: string
-): DependencyNode {
-  const nodeLabel = getRootNode(lockfile).inputs[inputName];
-  const node = lockfile.nodes[nodeLabel];
-  return DependencyNode.check(node);
+export function getDependencyNodes(
+  lockfile: Lockfile
+): Map<string, DependencyNode> {
+  const nodes = new Map();
+  for (const nodeLabel in lockfile.nodes) {
+    if (nodeLabel !== lockfile.root) {
+      nodes.set(nodeLabel, lockfile.nodes[nodeLabel]);
+    }
+  }
+  return nodes;
 }
 
 export function getFlakeRefUrl(flakeRef: FlakeRef): string {
