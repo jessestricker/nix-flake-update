@@ -5402,16 +5402,13 @@ exports.getFlakeRefUrl = exports.getDependencyNode = exports.getRootNode = expor
 const fs = __importStar(__nccwpck_require__(3292));
 const path = __importStar(__nccwpck_require__(1017));
 const runtypes_1 = __nccwpck_require__(5568);
-const InputName = runtypes_1.String.withBrand("InputName");
-const NodeLabel = runtypes_1.String.withBrand("NodeLabel");
-const CommitHash = runtypes_1.String.withBrand("CommitHash");
-const Inputs = (0, runtypes_1.Dictionary)(NodeLabel, InputName);
+const Inputs = (0, runtypes_1.Dictionary)(runtypes_1.String, runtypes_1.String);
 const GitHubFlakeRef = (0, runtypes_1.Record)({
     type: (0, runtypes_1.Literal)("github"),
     owner: runtypes_1.String,
     repo: runtypes_1.String,
     ref: (0, runtypes_1.Optional)(runtypes_1.String),
-    rev: (0, runtypes_1.Optional)(CommitHash),
+    rev: (0, runtypes_1.Optional)(runtypes_1.String),
 });
 const UnsupportedFlakeRef = (0, runtypes_1.Dictionary)(runtypes_1.String, runtypes_1.String);
 const FlakeRef = (0, runtypes_1.Union)(GitHubFlakeRef, UnsupportedFlakeRef);
@@ -5427,8 +5424,8 @@ const DependencyNode = (0, runtypes_1.Record)({
 const Node = (0, runtypes_1.Union)(RootNode, DependencyNode);
 const Lockfile = (0, runtypes_1.Record)({
     version: runtypes_1.Number,
-    root: NodeLabel,
-    nodes: (0, runtypes_1.Dictionary)(Node, NodeLabel),
+    root: runtypes_1.String,
+    nodes: (0, runtypes_1.Dictionary)(Node, runtypes_1.String),
 });
 const SUPPORTED_VERSION = 7;
 const FILE_NAME = "flake.lock";

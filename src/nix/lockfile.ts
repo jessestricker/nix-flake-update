@@ -12,16 +12,7 @@ import {
   Union,
 } from "runtypes";
 
-const InputName = String.withBrand("InputName");
-export type InputName = Static<typeof InputName>;
-
-const NodeLabel = String.withBrand("NodeLabel");
-export type NodeLabel = Static<typeof NodeLabel>;
-
-const CommitHash = String.withBrand("CommitHash");
-export type CommitHash = Static<typeof CommitHash>;
-
-const Inputs = Dictionary(NodeLabel, InputName);
+const Inputs = Dictionary(String, String);
 export type Inputs = Static<typeof Inputs>;
 
 const GitHubFlakeRef = Record({
@@ -29,7 +20,7 @@ const GitHubFlakeRef = Record({
   owner: String,
   repo: String,
   ref: Optional(String),
-  rev: Optional(CommitHash),
+  rev: Optional(String),
 });
 export type GitHubFlakeRef = Static<typeof GitHubFlakeRef>;
 
@@ -57,8 +48,8 @@ export type Node = Static<typeof Node>;
 
 const Lockfile = Record({
   version: Number,
-  root: NodeLabel,
-  nodes: Dictionary(Node, NodeLabel),
+  root: String,
+  nodes: Dictionary(Node, String),
 });
 export type Lockfile = Static<typeof Lockfile>;
 
@@ -88,7 +79,7 @@ export function getRootNode(lockfile: Lockfile): RootNode {
 
 export function getDependencyNode(
   lockfile: Lockfile,
-  inputName: InputName
+  inputName: string
 ): DependencyNode {
   const nodeLabel = getRootNode(lockfile).inputs[inputName];
   const node = lockfile.nodes[nodeLabel];
