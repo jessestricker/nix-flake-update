@@ -17,7 +17,7 @@
   "scripts": {
     "build": "tsc",
     "prepackage": "npm run build",
-    "package": "ncc build --quiet",
+    "package": "ncc build --source-map --quiet",
     "prerun": "npm run build",
     "run": "node .",
     "format": "prettier --write .",
