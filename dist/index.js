@@ -5331,7 +5331,7 @@ function compareLockfiles(oldLockfile, newLockfile) {
             });
             continue;
         }
-        if (oldNode.locked === newNode.locked) {
+        if (Object.entries(oldNode.locked) === Object.entries(newNode.locked)) {
             // nothing changed
             continue;
         }
@@ -5440,44 +5440,10 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.load = exports.parse = exports.Lockfile = exports.Node = exports.OriginalGitHubFlakeRef = exports.LockedGitHubFlakeRef = void 0;
+exports.load = exports.parse = void 0;
 const fs = __importStar(__nccwpck_require__(3292));
 const path = __importStar(__nccwpck_require__(1017));
 const rt = __importStar(__nccwpck_require__(5568));
-class LockedGitHubFlakeRef {
-    constructor(owner, repo, rev) {
-        this.owner = owner;
-        this.repo = repo;
-        this.rev = rev;
-    }
-}
-exports.LockedGitHubFlakeRef = LockedGitHubFlakeRef;
-class OriginalGitHubFlakeRef {
-    constructor(owner, repo, rev, ref) {
-        this.owner = owner;
-        this.repo = repo;
-        this.rev = rev;
-        this.ref = ref;
-    }
-}
-exports.OriginalGitHubFlakeRef = OriginalGitHubFlakeRef;
-class Node {
-    constructor(locked, original) {
-        this.locked = locked;
-        this.original = original;
-    }
-}
-exports.Node = Node;
-/**
- * A subset of the Nix flake lockfiles.
- * @see {@link https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-flake.html}
- */
-class Lockfile {
-    constructor(nodes) {
-        this.nodes = nodes;
-    }
-}
-exports.Lockfile = Lockfile;
 const GitHubFlakeRefJson = rt.Record({
     type: rt.Literal("github"),
     owner: rt.String,
@@ -5522,9 +5488,9 @@ function parse(jsonText) {
         const locked = parseLockedFlakeRef(nodeJson.locked);
         const original = parseOriginalFlakeRef(nodeJson.original);
         // add node to map
-        nodes.set(nodeLabel, new Node(locked, original));
+        nodes.set(nodeLabel, { locked, original });
     }
-    return new Lockfile(nodes);
+    return { nodes };
 }
 exports.parse = parse;
 async function load(dir) {
@@ -5536,15 +5502,28 @@ async function load(dir) {
 exports.load = load;
 function parseLockedFlakeRef(locked) {
     if (GitHubFlakeRefJson.guard(locked)) {
-        return new LockedGitHubFlakeRef(locked.owner, locked.repo, rt.String.check(locked.rev));
+        const ref = {
+            type: "github",
+            owner: locked.owner,
+            repo: locked.repo,
+            rev: rt.String.check(locked.rev),
+        };
+        return ref;
     }
-    return new Map(Object.entries(locked));
+    return { ...locked };
 }
 function parseOriginalFlakeRef(original) {
     if (GitHubFlakeRefJson.guard(original)) {
-        return new OriginalGitHubFlakeRef(original.owner, original.repo, original.rev, original.ref);
+        const ref = {
+            type: "github",
+            owner: original.owner,
+            repo: original.repo,
+            rev: original.rev,
+            ref: original.ref,
+        };
+        return ref;
     }
-    return new Map(Object.entries(original));
+    return { ...original };
 }
 
 
