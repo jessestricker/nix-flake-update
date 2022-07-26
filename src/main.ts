@@ -30,19 +30,18 @@ interface Changes {
 }
 
 interface RemoveAddedNode {
-  nodeLabel: string;
-  original: nixLockfile.FlakeRef;
-  locked: nixLockfile.FlakeRef;
+  label: string;
+  node: nixLockfile.Node;
 }
 
 interface UpdatedNode {
   nodeLabel: string;
 
-  oldOriginal: nixLockfile.FlakeRef;
-  newOriginal: nixLockfile.FlakeRef;
+  oldOriginal: nixLockfile.OriginalFlakeRef;
+  newOriginal: nixLockfile.OriginalFlakeRef;
 
-  oldLocked: nixLockfile.FlakeRef;
-  newLocked: nixLockfile.FlakeRef;
+  oldLocked: nixLockfile.LockedFlakeRef;
+  newLocked: nixLockfile.LockedFlakeRef;
 }
 
 function compareLockfiles(
@@ -51,40 +50,42 @@ function compareLockfiles(
 ): Changes {
   // inputs are matched by node label
 
-  const oldNodes = nixLockfile.getDependencyNodes(oldLockfile);
-  const newNodes = nixLockfile.getDependencyNodes(newLockfile);
   const changes: Changes = { added: [], updated: [], removed: [] };
 
   // check for updated and removed nodes
-  for (const [nodeLabel, oldNode] of oldNodes) {
-    const newNode = newNodes.get(nodeLabel);
+  for (const [nodeLabel, oldNode] of oldLockfile.nodes) {
+    const newNode = newLockfile.nodes.get(nodeLabel);
     if (newNode === undefined) {
       // removed node
       changes.removed.push({
-        nodeLabel: nodeLabel,
-        original: oldNode.original,
-        locked: oldNode.locked,
+        label: nodeLabel,
+        node: oldNode,
       });
-    } else {
-      // updated node
-      changes.updated.push({
-        nodeLabel: nodeLabel,
-        oldOriginal: oldNode.original,
-        newOriginal: newNode.original,
-        oldLocked: oldNode.locked,
-        newLocked: newNode.locked,
-      });
+      continue;
     }
+
+    if (oldNode.locked === newNode.locked) {
+      // nothing changed
+      continue;
+    }
+
+    // updated node
+    changes.updated.push({
+      nodeLabel: nodeLabel,
+      oldOriginal: oldNode.original,
+      newOriginal: newNode.original,
+      oldLocked: oldNode.locked,
+      newLocked: newNode.locked,
+    });
   }
 
   // check for added nodes
-  for (const [nodeLabel, newNode] of newNodes) {
-    if (!(nodeLabel in oldNodes)) {
+  for (const [nodeLabel, newNode] of newLockfile.nodes) {
+    if (!(nodeLabel in oldLockfile.nodes)) {
       // added node
       changes.added.push({
-        nodeLabel: nodeLabel,
-        original: newNode.original,
-        locked: newNode.locked,
+        label: nodeLabel,
+        node: newNode,
       });
     }
   }

@@ -1,68 +1,115 @@
 import * as fs from "fs/promises";
 import * as path from "path";
-import {
-  Boolean,
-  Dictionary,
-  Literal,
-  Number,
-  Optional,
-  Record,
-  Static,
-  String,
-  Union,
-} from "runtypes";
+import * as rt from "runtypes";
 
-const Inputs = Dictionary(String, String);
-export type Inputs = Static<typeof Inputs>;
+export type UnsupportedFlakeRef = Map<string, string>;
 
-const GitHubFlakeRef = Record({
-  type: Literal("github"),
-  owner: String,
-  repo: String,
-  ref: Optional(String),
-  rev: Optional(String),
+export class LockedGitHubFlakeRef {
+  owner: string;
+  repo: string;
+  rev: string;
+
+  constructor(owner: string, repo: string, rev: string) {
+    this.owner = owner;
+    this.repo = repo;
+    this.rev = rev;
+  }
+}
+
+export class OriginalGitHubFlakeRef {
+  owner: string;
+  repo: string;
+  rev?: string;
+  ref?: string;
+
+  constructor(owner: string, repo: string, rev?: string, ref?: string) {
+    this.owner = owner;
+    this.repo = repo;
+    this.rev = rev;
+    this.ref = ref;
+  }
+}
+
+export type LockedFlakeRef = UnsupportedFlakeRef | LockedGitHubFlakeRef;
+export type OriginalFlakeRef = UnsupportedFlakeRef | OriginalGitHubFlakeRef;
+
+export class Node {
+  locked: LockedFlakeRef;
+  original: OriginalFlakeRef;
+
+  constructor(locked: LockedFlakeRef, original: OriginalFlakeRef) {
+    this.locked = locked;
+    this.original = original;
+  }
+}
+
+/**
+ * A subset of the Nix flake lockfiles.
+ * @see {@link https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-flake.html}
+ */
+export class Lockfile {
+  nodes: Map<string, Node>;
+
+  constructor(nodes: Map<string, Node>) {
+    this.nodes = nodes;
+  }
+}
+
+const FlakeRefJson = rt.Intersect(
+  rt.Record({ type: rt.String }),
+  rt.Dictionary(rt.String, rt.String)
+);
+type FlakeRefJson = rt.Static<typeof FlakeRefJson>;
+enum FlakeRefType {
+  GitHub = "github",
+}
+const NodeJson = rt.Record({
+  inputs: rt.Optional(rt.Dictionary(rt.String, rt.String)),
+  locked: rt.Optional(FlakeRefJson),
+  original: rt.Optional(FlakeRefJson),
+  flake: rt.Optional(rt.Boolean),
 });
-export type GitHubFlakeRef = Static<typeof GitHubFlakeRef>;
-
-const UnsupportedFlakeRef = Dictionary(String, String);
-export type UnsupportedFlakeRef = Static<typeof UnsupportedFlakeRef>;
-
-const FlakeRef = Union(GitHubFlakeRef, UnsupportedFlakeRef);
-export type FlakeRef = Static<typeof FlakeRef>;
-
-const RootNode = Record({
-  inputs: Inputs,
+const LockfileJson = rt.Record({
+  version: rt.Number,
+  root: rt.String,
+  nodes: rt.Dictionary(NodeJson, rt.String),
 });
-export type RootNode = Static<typeof RootNode>;
-
-const DependencyNode = Record({
-  inputs: Optional(Inputs),
-  locked: FlakeRef,
-  original: FlakeRef,
-  flake: Optional(Boolean),
-});
-export type DependencyNode = Static<typeof DependencyNode>;
-
-const Node = Union(RootNode, DependencyNode);
-export type Node = Static<typeof Node>;
-
-const Lockfile = Record({
-  version: Number,
-  root: String,
-  nodes: Dictionary(Node, String),
-});
-export type Lockfile = Static<typeof Lockfile>;
 
 const SUPPORTED_VERSION = 7;
 const FILE_NAME = "flake.lock";
 
-export function parse(json: string): Lockfile {
-  const jsonObj = JSON.parse(json);
-  const lockfile = Lockfile.check(jsonObj);
-  if (lockfile.version !== SUPPORTED_VERSION) {
-    throw new Error("The lockfile is of an unsupported version.");
+export function parse(jsonText: string): Lockfile {
+  // parse and validate JSON
+  const jsonObject = JSON.parse(jsonText);
+  const lockfileJson = LockfileJson.check(jsonObject);
+
+  if (lockfileJson.version !== SUPPORTED_VERSION) {
+    throw new Error("The version of the lockfile is not supported.");
   }
-  return lockfile;
+
+  // construct lockfile instance from JSON
+  const nodes = new Map<string, Node>();
+  for (const nodeLabel in lockfileJson.nodes) {
+    // skip root node
+    if (nodeLabel == lockfileJson.root) {
+      continue;
+    }
+    const nodeJson = lockfileJson.nodes[nodeLabel];
+
+    // parse flake references
+    if (nodeJson.locked === undefined || nodeJson.original === undefined) {
+      throw new TypeError(
+        `The node ${nodeLabel} is missing the flake references.`
+      );
+    }
+    const locked = parseLockedFlakeRef(nodeJson.locked);
+    const original = parseOriginalFlakeRef(nodeJson.original);
+
+    // add node to map
+    nodes.set(nodeLabel, new Node(locked, original));
+  }
+
+  return new Lockfile(nodes);
 }
 
 export async function load(dir: string): Promise<Lockfile> {
@@ -72,29 +119,21 @@ export async function load(dir: string): Promise<Lockfile> {
   return lockfile;
 }
 
-export function getDependencyNodes(
-  lockfile: Lockfile
-): Map<string, DependencyNode> {
-  const nodes = new Map<string, DependencyNode>();
-  for (const nodeLabel in lockfile.nodes) {
-    if (nodeLabel === lockfile.root) {
-      continue;
-    }
-    const node = lockfile.nodes[nodeLabel];
-    nodes.set(nodeLabel, DependencyNode.check(node));
+function parseLockedFlakeRef(locked: FlakeRefJson): LockedFlakeRef {
+  if (locked.type === FlakeRefType.GitHub) {
+    return new LockedGitHubFlakeRef(locked.owner, locked.repo, locked.rev);
   }
-  return nodes;
+  return new Map(Object.entries(locked));
 }
 
-export function getFlakeRefUrl(flakeRef: FlakeRef): string {
-  if (GitHubFlakeRef.guard(flakeRef)) {
-    let urlBase = `github:${flakeRef.owner}/${flakeRef.repo}`;
-    const revOrRef = flakeRef.rev || flakeRef.ref;
-    if (revOrRef !== undefined) {
-      urlBase += "/" + revOrRef;
-    }
-    return urlBase;
+function parseOriginalFlakeRef(original: FlakeRefJson): OriginalFlakeRef {
+  if (original.type === FlakeRefType.GitHub) {
+    return new OriginalGitHubFlakeRef(
+      original.owner,
+      original.repo,
+      original.rev,
+      original.ref
+    );
   }
-
-  throw new TypeError("unsupported flake reference type");
+  return new Map(Object.entries(original));
 }

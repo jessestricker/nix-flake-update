@@ -5319,39 +5319,38 @@ async function main() {
 }
 function compareLockfiles(oldLockfile, newLockfile) {
     // inputs are matched by node label
-    const oldNodes = nixLockfile.getDependencyNodes(oldLockfile);
-    const newNodes = nixLockfile.getDependencyNodes(newLockfile);
     const changes = { added: [], updated: [], removed: [] };
     // check for updated and removed nodes
-    for (const [nodeLabel, oldNode] of oldNodes) {
-        const newNode = newNodes.get(nodeLabel);
+    for (const [nodeLabel, oldNode] of oldLockfile.nodes) {
+        const newNode = newLockfile.nodes.get(nodeLabel);
         if (newNode === undefined) {
             // removed node
             changes.removed.push({
-                nodeLabel: nodeLabel,
-                original: oldNode.original,
-                locked: oldNode.locked,
+                label: nodeLabel,
+                node: oldNode,
             });
+            continue;
         }
-        else {
-            // updated node
-            changes.updated.push({
-                nodeLabel: nodeLabel,
-                oldOriginal: oldNode.original,
-                newOriginal: newNode.original,
-                oldLocked: oldNode.locked,
-                newLocked: newNode.locked,
-            });
+        if (oldNode.locked === newNode.locked) {
+            // nothing changed
+            continue;
         }
+        // updated node
+        changes.updated.push({
+            nodeLabel: nodeLabel,
+            oldOriginal: oldNode.original,
+            newOriginal: newNode.original,
+            oldLocked: oldNode.locked,
+            newLocked: newNode.locked,
+        });
     }
     // check for added nodes
-    for (const [nodeLabel, newNode] of newNodes) {
-        if (!(nodeLabel in oldNodes)) {
+    for (const [nodeLabel, newNode] of newLockfile.nodes) {
+        if (!(nodeLabel in oldLockfile.nodes)) {
             // added node
             changes.added.push({
-                nodeLabel: nodeLabel,
-                original: newNode.original,
-                locked: newNode.locked,
+                label: nodeLabel,
+                node: newNode,
             });
         }
     }
@@ -5441,44 +5440,87 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getFlakeRefUrl = exports.getDependencyNodes = exports.load = exports.parse = void 0;
+exports.load = exports.parse = exports.Lockfile = exports.Node = exports.OriginalGitHubFlakeRef = exports.LockedGitHubFlakeRef = void 0;
 const fs = __importStar(__nccwpck_require__(3292));
 const path = __importStar(__nccwpck_require__(1017));
-const runtypes_1 = __nccwpck_require__(5568);
-const Inputs = (0, runtypes_1.Dictionary)(runtypes_1.String, runtypes_1.String);
-const GitHubFlakeRef = (0, runtypes_1.Record)({
-    type: (0, runtypes_1.Literal)("github"),
-    owner: runtypes_1.String,
-    repo: runtypes_1.String,
-    ref: (0, runtypes_1.Optional)(runtypes_1.String),
-    rev: (0, runtypes_1.Optional)(runtypes_1.String),
+const rt = __importStar(__nccwpck_require__(5568));
+class LockedGitHubFlakeRef {
+    constructor(owner, repo, rev) {
+        this.owner = owner;
+        this.repo = repo;
+        this.rev = rev;
+    }
+}
+exports.LockedGitHubFlakeRef = LockedGitHubFlakeRef;
+class OriginalGitHubFlakeRef {
+    constructor(owner, repo, rev, ref) {
+        this.owner = owner;
+        this.repo = repo;
+        this.rev = rev;
+        this.ref = ref;
+    }
+}
+exports.OriginalGitHubFlakeRef = OriginalGitHubFlakeRef;
+class Node {
+    constructor(locked, original) {
+        this.locked = locked;
+        this.original = original;
+    }
+}
+exports.Node = Node;
+/**
+ * A subset of the Nix flake lockfiles.
+ * @see {@link https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-flake.html}
+ */
+class Lockfile {
+    constructor(nodes) {
+        this.nodes = nodes;
+    }
+}
+exports.Lockfile = Lockfile;
+const FlakeRefJson = rt.Intersect(rt.Record({ type: rt.String }), rt.Dictionary(rt.String, rt.String));
+var FlakeRefType;
+(function (FlakeRefType) {
+    FlakeRefType["GitHub"] = "github";
+})(FlakeRefType || (FlakeRefType = {}));
+const NodeJson = rt.Record({
+    inputs: rt.Optional(rt.Dictionary(rt.String, rt.String)),
+    locked: rt.Optional(FlakeRefJson),
+    original: rt.Optional(FlakeRefJson),
+    flake: rt.Optional(rt.Boolean),
 });
-const UnsupportedFlakeRef = (0, runtypes_1.Dictionary)(runtypes_1.String, runtypes_1.String);
-const FlakeRef = (0, runtypes_1.Union)(GitHubFlakeRef, UnsupportedFlakeRef);
-const RootNode = (0, runtypes_1.Record)({
-    inputs: Inputs,
-});
-const DependencyNode = (0, runtypes_1.Record)({
-    inputs: (0, runtypes_1.Optional)(Inputs),
-    locked: FlakeRef,
-    original: FlakeRef,
-    flake: (0, runtypes_1.Optional)(runtypes_1.Boolean),
-});
-const Node = (0, runtypes_1.Union)(RootNode, DependencyNode);
-const Lockfile = (0, runtypes_1.Record)({
-    version: runtypes_1.Number,
-    root: runtypes_1.String,
-    nodes: (0, runtypes_1.Dictionary)(Node, runtypes_1.String),
+const LockfileJson = rt.Record({
+    version: rt.Number,
+    root: rt.String,
+    nodes: rt.Dictionary(NodeJson, rt.String),
 });
 const SUPPORTED_VERSION = 7;
 const FILE_NAME = "flake.lock";
-function parse(json) {
-    const jsonObj = JSON.parse(json);
-    const lockfile = Lockfile.check(jsonObj);
-    if (lockfile.version !== SUPPORTED_VERSION) {
-        throw new Error("The lockfile is of an unsupported version.");
+function parse(jsonText) {
+    // parse and validate JSON
+    const jsonObject = JSON.parse(jsonText);
+    const lockfileJson = LockfileJson.check(jsonObject);
+    if (lockfileJson.version !== SUPPORTED_VERSION) {
+        throw new Error("The version of the lockfile is not supported.");
     }
-    return lockfile;
+    // construct lockfile instance from JSON
+    const nodes = new Map();
+    for (const nodeLabel in lockfileJson.nodes) {
+        // skip root node
+        if (nodeLabel == lockfileJson.root) {
+            continue;
+        }
+        const nodeJson = lockfileJson.nodes[nodeLabel];
+        // parse flake references
+        if (nodeJson.locked === undefined || nodeJson.original === undefined) {
+            throw new TypeError(`The node ${nodeLabel} is missing the flake references.`);
+        }
+        const locked = parseLockedFlakeRef(nodeJson.locked);
+        const original = parseOriginalFlakeRef(nodeJson.original);
+        // add node to map
+        nodes.set(nodeLabel, new Node(locked, original));
+    }
+    return new Lockfile(nodes);
 }
 exports.parse = parse;
 async function load(dir) {
@@ -5488,30 +5530,18 @@ async function load(dir) {
     return lockfile;
 }
 exports.load = load;
-function getDependencyNodes(lockfile) {
-    const nodes = new Map();
-    for (const nodeLabel in lockfile.nodes) {
-        if (nodeLabel === lockfile.root) {
-            continue;
-        }
-        const node = lockfile.nodes[nodeLabel];
-        nodes.set(nodeLabel, DependencyNode.check(node));
+function parseLockedFlakeRef(locked) {
+    if (locked.type === FlakeRefType.GitHub) {
+        return new LockedGitHubFlakeRef(locked.owner, locked.repo, locked.rev);
     }
-    return nodes;
+    return new Map(Object.entries(locked));
 }
-exports.getDependencyNodes = getDependencyNodes;
-function getFlakeRefUrl(flakeRef) {
-    if (GitHubFlakeRef.guard(flakeRef)) {
-        let urlBase = `github:${flakeRef.owner}/${flakeRef.repo}`;
-        const revOrRef = flakeRef.rev || flakeRef.ref;
-        if (revOrRef !== undefined) {
-            urlBase += "/" + revOrRef;
-        }
-        return urlBase;
+function parseOriginalFlakeRef(original) {
+    if (original.type === FlakeRefType.GitHub) {
+        return new OriginalGitHubFlakeRef(original.owner, original.repo, original.rev, original.ref);
     }
-    throw new TypeError("unsupported flake reference type");
+    return new Map(Object.entries(original));
 }
-exports.getFlakeRefUrl = getFlakeRefUrl;
 
 
 /***/ }),
