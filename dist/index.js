@@ -5478,11 +5478,15 @@ class Lockfile {
     }
 }
 exports.Lockfile = Lockfile;
-const FlakeRefJson = rt.Intersect(rt.Record({ type: rt.String }), rt.Dictionary(rt.String, rt.String));
-var FlakeRefType;
-(function (FlakeRefType) {
-    FlakeRefType["GitHub"] = "github";
-})(FlakeRefType || (FlakeRefType = {}));
+const GitHubFlakeRefJson = rt.Record({
+    type: rt.Literal("github"),
+    owner: rt.String,
+    repo: rt.String,
+    rev: rt.Optional(rt.String),
+    ref: rt.Optional(rt.String),
+});
+const UnsupportedFlakeRefJson = rt.Intersect(rt.Record({ type: rt.String }), rt.Dictionary(rt.Union(rt.String, rt.Number), rt.String));
+const FlakeRefJson = rt.Union(UnsupportedFlakeRefJson, GitHubFlakeRefJson);
 const NodeJson = rt.Record({
     inputs: rt.Optional(rt.Dictionary(rt.String, rt.String)),
     locked: rt.Optional(FlakeRefJson),
@@ -5531,13 +5535,13 @@ async function load(dir) {
 }
 exports.load = load;
 function parseLockedFlakeRef(locked) {
-    if (locked.type === FlakeRefType.GitHub) {
-        return new LockedGitHubFlakeRef(locked.owner, locked.repo, locked.rev);
+    if (GitHubFlakeRefJson.guard(locked)) {
+        return new LockedGitHubFlakeRef(locked.owner, locked.repo, rt.String.check(locked.rev));
     }
     return new Map(Object.entries(locked));
 }
 function parseOriginalFlakeRef(original) {
-    if (original.type === FlakeRefType.GitHub) {
+    if (GitHubFlakeRefJson.guard(original)) {
         return new OriginalGitHubFlakeRef(original.owner, original.repo, original.rev, original.ref);
     }
     return new Map(Object.entries(original));

@@ -2,7 +2,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as rt from "runtypes";
 
-export type UnsupportedFlakeRef = Map<string, string>;
+export type UnsupportedFlakeRef = Map<string, string | number>;
 
 export class LockedGitHubFlakeRef {
   owner: string;
@@ -55,14 +55,19 @@ export class Lockfile {
   }
 }
 
-const FlakeRefJson = rt.Intersect(
+const GitHubFlakeRefJson = rt.Record({
+  type: rt.Literal("github"),
+  owner: rt.String,
+  repo: rt.String,
+  rev: rt.Optional(rt.String),
+  ref: rt.Optional(rt.String),
+});
+const UnsupportedFlakeRefJson = rt.Intersect(
   rt.Record({ type: rt.String }),
-  rt.Dictionary(rt.String, rt.String)
+  rt.Dictionary(rt.Union(rt.String, rt.Number), rt.String)
 );
+const FlakeRefJson = rt.Union(UnsupportedFlakeRefJson, GitHubFlakeRefJson);
 type FlakeRefJson = rt.Static<typeof FlakeRefJson>;
-enum FlakeRefType {
-  GitHub = "github",
-}
 const NodeJson = rt.Record({
   inputs: rt.Optional(rt.Dictionary(rt.String, rt.String)),
   locked: rt.Optional(FlakeRefJson),
@@ -120,14 +125,18 @@ export async function load(dir: string): Promise<Lockfile> {
 }
 
 function parseLockedFlakeRef(locked: FlakeRefJson): LockedFlakeRef {
-  if (locked.type === FlakeRefType.GitHub) {
-    return new LockedGitHubFlakeRef(locked.owner, locked.repo, locked.rev);
+  if (GitHubFlakeRefJson.guard(locked)) {
+    return new LockedGitHubFlakeRef(
+      locked.owner,
+      locked.repo,
+      rt.String.check(locked.rev)
+    );
   }
   return new Map(Object.entries(locked));
 }
 
 function parseOriginalFlakeRef(original: FlakeRefJson): OriginalFlakeRef {
-  if (original.type === FlakeRefType.GitHub) {
+  if (GitHubFlakeRefJson.guard(original)) {
     return new OriginalGitHubFlakeRef(
       original.owner,
       original.repo,
