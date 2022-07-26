@@ -2,57 +2,37 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as rt from "runtypes";
 
-export type UnsupportedFlakeRef = Map<string, string | number>;
+export interface FlakeRef {
+  type: string;
+  [key: string]: boolean | number | string | undefined;
+}
 
-export class LockedGitHubFlakeRef {
+export interface LockedGitHubFlakeRef extends FlakeRef {
+  type: "github";
   owner: string;
   repo: string;
   rev: string;
-
-  constructor(owner: string, repo: string, rev: string) {
-    this.owner = owner;
-    this.repo = repo;
-    this.rev = rev;
-  }
 }
 
-export class OriginalGitHubFlakeRef {
+export interface OriginalGitHubFlakeRef extends FlakeRef {
+  type: "github";
   owner: string;
   repo: string;
-  rev?: string;
-  ref?: string;
-
-  constructor(owner: string, repo: string, rev?: string, ref?: string) {
-    this.owner = owner;
-    this.repo = repo;
-    this.rev = rev;
-    this.ref = ref;
-  }
+  rev?: string; // a commit hash
+  ref?: string; // a tag/branch name
 }
 
-export type LockedFlakeRef = UnsupportedFlakeRef | LockedGitHubFlakeRef;
-export type OriginalFlakeRef = UnsupportedFlakeRef | OriginalGitHubFlakeRef;
-
-export class Node {
-  locked: LockedFlakeRef;
-  original: OriginalFlakeRef;
-
-  constructor(locked: LockedFlakeRef, original: OriginalFlakeRef) {
-    this.locked = locked;
-    this.original = original;
-  }
+export interface Node {
+  locked: FlakeRef;
+  original: FlakeRef;
 }
 
 /**
  * A subset of the Nix flake lockfiles.
  * @see {@link https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-flake.html}
  */
-export class Lockfile {
+export interface Lockfile {
   nodes: Map<string, Node>;
-
-  constructor(nodes: Map<string, Node>) {
-    this.nodes = nodes;
-  }
 }
 
 const GitHubFlakeRefJson = rt.Record({
@@ -111,10 +91,10 @@ export function parse(jsonText: string): Lockfile {
     const original = parseOriginalFlakeRef(nodeJson.original);
 
     // add node to map
-    nodes.set(nodeLabel, new Node(locked, original));
+    nodes.set(nodeLabel, { locked, original });
   }
 
-  return new Lockfile(nodes);
+  return { nodes };
 }
 
 export async function load(dir: string): Promise<Lockfile> {
@@ -124,25 +104,29 @@ export async function load(dir: string): Promise<Lockfile> {
   return lockfile;
 }
 
-function parseLockedFlakeRef(locked: FlakeRefJson): LockedFlakeRef {
+function parseLockedFlakeRef(locked: FlakeRefJson): FlakeRef {
   if (GitHubFlakeRefJson.guard(locked)) {
-    return new LockedGitHubFlakeRef(
-      locked.owner,
-      locked.repo,
-      rt.String.check(locked.rev)
-    );
+    const ref: LockedGitHubFlakeRef = {
+      type: "github",
+      owner: locked.owner,
+      repo: locked.repo,
+      rev: rt.String.check(locked.rev),
+    };
+    return ref;
   }
-  return new Map(Object.entries(locked));
+  return { ...locked };
 }
 
-function parseOriginalFlakeRef(original: FlakeRefJson): OriginalFlakeRef {
+function parseOriginalFlakeRef(original: FlakeRefJson): FlakeRef {
   if (GitHubFlakeRefJson.guard(original)) {
-    return new OriginalGitHubFlakeRef(
-      original.owner,
-      original.repo,
-      original.rev,
-      original.ref
-    );
+    const ref: OriginalGitHubFlakeRef = {
+      type: "github",
+      owner: original.owner,
+      repo: original.repo,
+      rev: original.rev,
+      ref: original.ref,
+    };
+    return ref;
   }
-  return new Map(Object.entries(original));
+  return { ...original };
 }

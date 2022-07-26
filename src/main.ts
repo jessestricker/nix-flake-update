@@ -37,11 +37,11 @@ interface RemoveAddedNode {
 interface UpdatedNode {
   nodeLabel: string;
 
-  oldOriginal: nixLockfile.OriginalFlakeRef;
-  newOriginal: nixLockfile.OriginalFlakeRef;
+  oldOriginal: nixLockfile.FlakeRef;
+  newOriginal: nixLockfile.FlakeRef;
 
-  oldLocked: nixLockfile.LockedFlakeRef;
-  newLocked: nixLockfile.LockedFlakeRef;
+  oldLocked: nixLockfile.FlakeRef;
+  newLocked: nixLockfile.FlakeRef;
 }
 
 function compareLockfiles(
@@ -64,7 +64,7 @@ function compareLockfiles(
       continue;
     }
 
-    if (oldNode.locked === newNode.locked) {
+    if (Object.entries(oldNode.locked) === Object.entries(newNode.locked)) {
       // nothing changed
       continue;
     }
