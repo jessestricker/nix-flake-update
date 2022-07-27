@@ -33,7 +33,16 @@ jobs:
         with:
           nix_conf: experimental-features = nix-command flakes
       - name: Run this action
+        id: nix-update
         uses: ./
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v4
+        with:
+          branch: nix-update
+          assignees: jessestricker
+          commit-message: ${{ steps.nix-update.outputs.commit-message }}
+          title: ${{ steps.nix-update.outputs.pull-request-title }}
+          body: ${{ steps.nix-update.outputs.pull-request-body }}
 
   format:
     name: Format
