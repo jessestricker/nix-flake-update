@@ -16,6 +16,7 @@
   "type": "module",
   "main": "out/main.js",
   "scripts": {
+    "clean": "rm --recursive --force dist/ out/",
     "build": "tsc",
     "prepackage": "npm run build",
     "package": "ncc build --target es2022 --source-map --quiet",

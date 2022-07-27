@@ -5,23 +5,6 @@ on:
   push: { branches: [main] }
 
 jobs:
-  package:
-    name: Package
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Set up Nix
-        uses: nixbuild/nix-quick-install-action@v16
-        with:
-          nix_conf: experimental-features = nix-command flakes
-      - name: Install dependencies
-        run: nix develop -i -c npm ci
-      - name: Build & Package
-        run: nix develop -i -c npm run package
-      - name: Check for changes
-        run: git diff --exit-code dist/
-
   integration-test:
     name: Integration Test
     runs-on: ubuntu-latest
@@ -35,7 +18,7 @@ jobs:
       - name: Run this action
         id: nix-update
         uses: ./
-      - name: Create Pull Request
+      - name: Create pull request
         uses: peter-evans/create-pull-request@v4
         with:
           branch: nix-update
