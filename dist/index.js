@@ -5660,7 +5660,7 @@ function parseOriginalFlakeRef(original) {
 }
 function getFlakeRefUri(flakeRef) {
     if (GitHubFlakeRefJson.guard(flakeRef)) {
-        let uri = `github:${flakeRef.owner}/${flakeRef.owner}`;
+        let uri = `github:${flakeRef.owner}/${flakeRef.repo}`;
         const revOrRef = flakeRef.rev || flakeRef.ref;
         if (revOrRef !== undefined) {
             uri += "/" + revOrRef;

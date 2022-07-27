@@ -116,7 +116,7 @@ function parseOriginalFlakeRef(original: FlakeRefJson): FlakeRef {
 
 export function getFlakeRefUri(flakeRef: FlakeRef): string {
   if (GitHubFlakeRefJson.guard(flakeRef)) {
-    let uri = `github:${flakeRef.owner}/${flakeRef.owner}`;
+    let uri = `github:${flakeRef.owner}/${flakeRef.repo}`;
     const revOrRef = flakeRef.rev || flakeRef.ref;
     if (revOrRef !== undefined) {
       uri += "/" + revOrRef;
