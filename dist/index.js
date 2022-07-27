@@ -3006,6 +3006,86 @@ function copyFile(srcFile, destFile, force) {
 
 /***/ }),
 
+/***/ 11:
+/***/ ((module) => {
+
+"use strict";
+
+
+// do not edit .js files directly - edit src/index.jst
+
+
+  var envHasBigInt64Array = typeof BigInt64Array !== 'undefined';
+
+
+module.exports = function equal(a, b) {
+  if (a === b) return true;
+
+  if (a && b && typeof a == 'object' && typeof b == 'object') {
+    if (a.constructor !== b.constructor) return false;
+
+    var length, i, keys;
+    if (Array.isArray(a)) {
+      length = a.length;
+      if (length != b.length) return false;
+      for (i = length; i-- !== 0;)
+        if (!equal(a[i], b[i])) return false;
+      return true;
+    }
+
+
+    if ((a instanceof Map) && (b instanceof Map)) {
+      if (a.size !== b.size) return false;
+      for (i of a.entries())
+        if (!b.has(i[0])) return false;
+      for (i of a.entries())
+        if (!equal(i[1], b.get(i[0]))) return false;
+      return true;
+    }
+
+    if ((a instanceof Set) && (b instanceof Set)) {
+      if (a.size !== b.size) return false;
+      for (i of a.entries())
+        if (!b.has(i[0])) return false;
+      return true;
+    }
+
+    if (ArrayBuffer.isView(a) && ArrayBuffer.isView(b)) {
+      length = a.length;
+      if (length != b.length) return false;
+      for (i = length; i-- !== 0;)
+        if (a[i] !== b[i]) return false;
+      return true;
+    }
+
+
+    if (a.constructor === RegExp) return a.source === b.source && a.flags === b.flags;
+    if (a.valueOf !== Object.prototype.valueOf) return a.valueOf() === b.valueOf();
+    if (a.toString !== Object.prototype.toString) return a.toString() === b.toString();
+
+    keys = Object.keys(a);
+    length = keys.length;
+    if (length !== Object.keys(b).length) return false;
+
+    for (i = length; i-- !== 0;)
+      if (!Object.prototype.hasOwnProperty.call(b, keys[i])) return false;
+
+    for (i = length; i-- !== 0;) {
+      var key = keys[i];
+
+      if (!equal(a[key], b[key])) return false;
+    }
+
+    return true;
+  }
+
+  // true if both NaN, false otherwise
+  return a!==a && b!==b;
+};
+
+
+/***/ }),
+
 /***/ 3340:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -5298,20 +5378,24 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
+const es6_1 = __importDefault(__nccwpck_require__(11));
 const nixCommand = __importStar(__nccwpck_require__(5566));
-const nixLockfile = __importStar(__nccwpck_require__(5814));
+const lockfile_1 = __nccwpck_require__(5814);
 const util = __importStar(__nccwpck_require__(6568));
 async function main() {
     const projectDir = process.cwd();
     // read current lockfile
-    const oldLockfile = await nixLockfile.load(projectDir);
+    const oldLockfile = await (0, lockfile_1.loadLockfile)(projectDir);
     util.printDebug("old lockfile", oldLockfile);
     // update flake inputs
     await nixCommand.flakeUpdate(projectDir);
     // read updated lockfile
-    const newLockfile = await nixLockfile.load(projectDir);
+    const newLockfile = await (0, lockfile_1.loadLockfile)(projectDir);
     util.printDebug("new lockfile", newLockfile);
     // get changes between lockfiles
     const changes = compareLockfiles(oldLockfile, newLockfile);
@@ -5319,40 +5403,33 @@ async function main() {
 }
 function compareLockfiles(oldLockfile, newLockfile) {
     // inputs are matched by node label
-    const changes = { added: [], updated: [], removed: [] };
+    const changes = {
+        added: new Map(),
+        updated: new Map(),
+        removed: new Map(),
+    };
     // check for updated and removed nodes
     for (const [nodeLabel, oldNode] of oldLockfile.nodes) {
         const newNode = newLockfile.nodes.get(nodeLabel);
         if (newNode === undefined) {
             // removed node
-            changes.removed.push({
-                label: nodeLabel,
-                node: oldNode,
-            });
+            changes.removed.set(nodeLabel, oldNode);
             continue;
         }
-        if (Object.entries(oldNode.locked) === Object.entries(newNode.locked)) {
+        if ((0, es6_1.default)(oldNode.locked, newNode.locked)) {
             // nothing changed
             continue;
         }
         // updated node
-        changes.updated.push({
-            nodeLabel: nodeLabel,
-            oldOriginal: oldNode.original,
-            newOriginal: newNode.original,
-            oldLocked: oldNode.locked,
-            newLocked: newNode.locked,
-        });
+        changes.updated.set(nodeLabel, { oldNode: oldNode, newNode: newNode });
     }
     // check for added nodes
     for (const [nodeLabel, newNode] of newLockfile.nodes) {
-        if (!(nodeLabel in oldLockfile.nodes)) {
-            // added node
-            changes.added.push({
-                label: nodeLabel,
-                node: newNode,
-            });
+        if (oldLockfile.nodes.has(nodeLabel)) {
+            continue;
         }
+        // added node
+        changes.removed.set(nodeLabel, newNode);
     }
     return changes;
 }
@@ -5363,7 +5440,7 @@ catch (error) {
     const errorMsg = error instanceof Error ? error : "unknown error type";
     core.setFailed(errorMsg);
 }
-
+//# sourceMappingURL=main.js.map
 
 /***/ }),
 
@@ -5407,7 +5484,7 @@ async function flakeUpdate(dir) {
     });
 }
 exports.flakeUpdate = flakeUpdate;
-
+//# sourceMappingURL=command.js.map
 
 /***/ }),
 
@@ -5440,7 +5517,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.load = exports.parse = void 0;
+exports.loadLockfile = exports.parse = void 0;
 const fs = __importStar(__nccwpck_require__(3292));
 const path = __importStar(__nccwpck_require__(1017));
 const rt = __importStar(__nccwpck_require__(5568));
@@ -5493,13 +5570,13 @@ function parse(jsonText) {
     return { nodes };
 }
 exports.parse = parse;
-async function load(dir) {
+async function loadLockfile(dir) {
     const filePath = path.join(dir, FILE_NAME);
     const fileText = await fs.readFile(filePath, { encoding: "utf-8" });
     const lockfile = parse(fileText);
     return lockfile;
 }
-exports.load = load;
+exports.loadLockfile = loadLockfile;
 function parseLockedFlakeRef(locked) {
     if (GitHubFlakeRefJson.guard(locked)) {
         const ref = {
@@ -5525,7 +5602,7 @@ function parseOriginalFlakeRef(original) {
     }
     return { ...original };
 }
-
+//# sourceMappingURL=lockfile.js.map
 
 /***/ }),
 
@@ -5590,7 +5667,7 @@ function printDebug(valueName, value) {
     core.debug(`${valueName} = ${valueStr}`);
 }
 exports.printDebug = printDebug;
-
+//# sourceMappingURL=util.js.map
 
 /***/ }),
 

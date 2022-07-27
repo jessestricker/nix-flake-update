@@ -3,19 +3,12 @@ import * as path from "path";
 import * as rt from "runtypes";
 
 export interface FlakeRef {
-  type: string;
+  readonly type: string;
   [key: string]: boolean | number | string | undefined;
 }
 
-export interface LockedGitHubFlakeRef extends FlakeRef {
-  type: "github";
-  owner: string;
-  repo: string;
-  rev: string;
-}
-
-export interface OriginalGitHubFlakeRef extends FlakeRef {
-  type: "github";
+export interface GitHubFlakeRef extends FlakeRef {
+  readonly type: "github";
   owner: string;
   repo: string;
   rev?: string; // a commit hash
@@ -97,7 +90,7 @@ export function parse(jsonText: string): Lockfile {
   return { nodes };
 }
 
-export async function load(dir: string): Promise<Lockfile> {
+export async function loadLockfile(dir: string): Promise<Lockfile> {
   const filePath = path.join(dir, FILE_NAME);
   const fileText = await fs.readFile(filePath, { encoding: "utf-8" });
   const lockfile = parse(fileText);
@@ -106,7 +99,7 @@ export async function load(dir: string): Promise<Lockfile> {
 
 function parseLockedFlakeRef(locked: FlakeRefJson): FlakeRef {
   if (GitHubFlakeRefJson.guard(locked)) {
-    const ref: LockedGitHubFlakeRef = {
+    const ref: GitHubFlakeRef = {
       type: "github",
       owner: locked.owner,
       repo: locked.repo,
@@ -119,7 +112,7 @@ function parseLockedFlakeRef(locked: FlakeRefJson): FlakeRef {
 
 function parseOriginalFlakeRef(original: FlakeRefJson): FlakeRef {
   if (GitHubFlakeRefJson.guard(original)) {
-    const ref: OriginalGitHubFlakeRef = {
+    const ref: GitHubFlakeRef = {
       type: "github",
       owner: original.owner,
       repo: original.repo,

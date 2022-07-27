@@ -1,21 +1,22 @@
 import * as core from "@actions/core";
+import fastDeepEqual from "fast-deep-equal/es6";
 
 import * as nixCommand from "./nix/command";
-import * as nixLockfile from "./nix/lockfile";
+import { loadLockfile, Lockfile, Node } from "./nix/lockfile";
 import * as util from "./util";
 
 async function main() {
   const projectDir = process.cwd();
 
   // read current lockfile
-  const oldLockfile = await nixLockfile.load(projectDir);
+  const oldLockfile = await loadLockfile(projectDir);
   util.printDebug("old lockfile", oldLockfile);
 
   // update flake inputs
   await nixCommand.flakeUpdate(projectDir);
 
   // read updated lockfile
-  const newLockfile = await nixLockfile.load(projectDir);
+  const newLockfile = await loadLockfile(projectDir);
   util.printDebug("new lockfile", newLockfile);
 
   // get changes between lockfiles
@@ -23,71 +24,59 @@ async function main() {
   util.printDebug("changes", changes);
 }
 
-interface Changes {
-  added: RemoveAddedNode[];
-  updated: UpdatedNode[];
-  removed: RemoveAddedNode[];
+/**
+ * The set of updated, added and removed nodes between two lockfiles.
+ */
+interface LockfileChanges {
+  updated: Map<string, NodeUpdate>;
+  added: Map<string, Node>;
+  removed: Map<string, Node>;
 }
 
-interface RemoveAddedNode {
-  label: string;
-  node: nixLockfile.Node;
-}
-
-interface UpdatedNode {
-  nodeLabel: string;
-
-  oldOriginal: nixLockfile.FlakeRef;
-  newOriginal: nixLockfile.FlakeRef;
-
-  oldLocked: nixLockfile.FlakeRef;
-  newLocked: nixLockfile.FlakeRef;
+interface NodeUpdate {
+  oldNode: Node;
+  newNode: Node;
 }
 
 function compareLockfiles(
-  oldLockfile: nixLockfile.Lockfile,
-  newLockfile: nixLockfile.Lockfile
-): Changes {
+  oldLockfile: Lockfile,
+  newLockfile: Lockfile
+): LockfileChanges {
   // inputs are matched by node label
 
-  const changes: Changes = { added: [], updated: [], removed: [] };
+  const changes: LockfileChanges = {
+    added: new Map(),
+    updated: new Map(),
+    removed: new Map(),
+  };
 
   // check for updated and removed nodes
   for (const [nodeLabel, oldNode] of oldLockfile.nodes) {
     const newNode = newLockfile.nodes.get(nodeLabel);
+
     if (newNode === undefined) {
       // removed node
-      changes.removed.push({
-        label: nodeLabel,
-        node: oldNode,
-      });
+      changes.removed.set(nodeLabel, oldNode);
       continue;
     }
 
-    if (Object.entries(oldNode.locked) === Object.entries(newNode.locked)) {
+    if (fastDeepEqual(oldNode.locked, newNode.locked)) {
       // nothing changed
       continue;
     }
 
     // updated node
-    changes.updated.push({
-      nodeLabel: nodeLabel,
-      oldOriginal: oldNode.original,
-      newOriginal: newNode.original,
-      oldLocked: oldNode.locked,
-      newLocked: newNode.locked,
-    });
+    changes.updated.set(nodeLabel, { oldNode: oldNode, newNode: newNode });
   }
 
   // check for added nodes
   for (const [nodeLabel, newNode] of newLockfile.nodes) {
-    if (!(nodeLabel in oldLockfile.nodes)) {
-      // added node
-      changes.added.push({
-        label: nodeLabel,
-        node: newNode,
-      });
+    if (oldLockfile.nodes.has(nodeLabel)) {
+      continue;
     }
+
+    // added node
+    changes.removed.set(nodeLabel, newNode);
   }
 
   return changes;
