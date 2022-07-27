@@ -5464,7 +5464,7 @@ function generateReport(changes) {
         let text = "## " + title + "\n\n";
         for (const [nodeLabel, node] of nodes) {
             const uri = (0, lockfile_1.getFlakeRefUri)(node.locked);
-            text += "* **`" + nodeLabel + "`**: `" + uri + "`\n";
+            text += "* **" + nodeLabel + "**: `" + uri + "`\n";
         }
         return text;
     }
@@ -5473,12 +5473,12 @@ function generateReport(changes) {
         for (const [nodeLabel, nodeUpdate] of nodes) {
             const oldUri = (0, lockfile_1.getFlakeRefUri)(nodeUpdate.oldNode.locked);
             const newUri = (0, lockfile_1.getFlakeRefUri)(nodeUpdate.newNode.locked);
-            text += "* **`" + nodeLabel + "`**:\n";
-            text += "  `" + oldUri + "`\n";
+            text += "* **" + nodeLabel + "**:\n";
+            text += "  `" + oldUri + "` →\n";
             text += "  `" + newUri + "`\n";
             const compareUrl = getCompareUrl(nodeUpdate.oldNode.locked, nodeUpdate.newNode.locked);
             if (compareUrl !== undefined) {
-                text += `  ([**compare view**](${compareUrl}))\n`;
+                text += `  __([view changes](${compareUrl}))__\n`;
             }
         }
         return text;

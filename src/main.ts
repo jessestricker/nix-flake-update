@@ -133,7 +133,7 @@ function generateReport(changes: LockfileChanges): Report {
     let text = "## " + title + "\n\n";
     for (const [nodeLabel, node] of nodes) {
       const uri = getFlakeRefUri(node.locked);
-      text += "* **`" + nodeLabel + "`**: `" + uri + "`\n";
+      text += "* **" + nodeLabel + "**: `" + uri + "`\n";
     }
     return text;
   }
@@ -146,15 +146,15 @@ function generateReport(changes: LockfileChanges): Report {
     for (const [nodeLabel, nodeUpdate] of nodes) {
       const oldUri = getFlakeRefUri(nodeUpdate.oldNode.locked);
       const newUri = getFlakeRefUri(nodeUpdate.newNode.locked);
-      text += "* **`" + nodeLabel + "`**:\n";
-      text += "  `" + oldUri + "`\n";
+      text += "* **" + nodeLabel + "**:\n";
+      text += "  `" + oldUri + "` →\n";
       text += "  `" + newUri + "`\n";
       const compareUrl = getCompareUrl(
         nodeUpdate.oldNode.locked,
         nodeUpdate.newNode.locked
       );
       if (compareUrl !== undefined) {
-        text += `  ([**compare view**](${compareUrl}))\n`;
+        text += `  __([view changes](${compareUrl}))__\n`;
       }
     }
     return text;
