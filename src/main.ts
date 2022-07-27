@@ -1,8 +1,7 @@
 import * as core from "@actions/core";
 
 import { compareLockfiles } from "./changes";
-import * as nixCommand from "./nix/command";
-import { loadLockfile } from "./nix/lockfile";
+import { loadLockfile } from "./lockfile";
 import { generateReport } from "./report";
 import * as util from "./util";
 
@@ -13,8 +12,8 @@ async function main() {
   const oldLockfile = await loadLockfile(projectDir);
   util.printDebug("old lockfile", oldLockfile);
 
-  // update flake inputs
-  await nixCommand.flakeUpdate(projectDir);
+  // update flake's inputs
+  await recreateLockfile(projectDir);
 
   // read updated lockfile
   const newLockfile = await loadLockfile(projectDir);
@@ -39,6 +38,14 @@ async function main() {
   core.setOutput("commit-message", report.title);
   core.setOutput("pull-request-title", report.title);
   core.setOutput("pull-request-body", report.body);
+}
+
+async function recreateLockfile(dir: string) {
+  core.info("Updating the flake's inputs...");
+  const output = await util.runCommand("nix", ["flake", "update"], dir);
+  core.group("Output of `nix flake update`", async () => {
+    core.info(output.stderr);
+  });
 }
 
 try {

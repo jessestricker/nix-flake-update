@@ -5401,125 +5401,7 @@ exports.compareLockfiles = compareLockfiles;
 
 /***/ }),
 
-/***/ 6971:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const core = __importStar(__nccwpck_require__(2186));
-const changes_1 = __nccwpck_require__(801);
-const nixCommand = __importStar(__nccwpck_require__(5566));
-const lockfile_1 = __nccwpck_require__(5814);
-const report_1 = __nccwpck_require__(9497);
-const util = __importStar(__nccwpck_require__(6568));
-async function main() {
-    const projectDir = process.cwd();
-    // read current lockfile
-    const oldLockfile = await (0, lockfile_1.loadLockfile)(projectDir);
-    util.printDebug("old lockfile", oldLockfile);
-    // update flake inputs
-    await nixCommand.flakeUpdate(projectDir);
-    // read updated lockfile
-    const newLockfile = await (0, lockfile_1.loadLockfile)(projectDir);
-    util.printDebug("new lockfile", newLockfile);
-    // get changes between lockfiles
-    const changes = (0, changes_1.compareLockfiles)(oldLockfile, newLockfile);
-    const changesCount = changes.updated.size + changes.added.size + changes.removed.size;
-    if (changesCount === 0) {
-        core.info("The nodes in the lockfile did not change.");
-        return;
-    }
-    else {
-        util.printDebug("changes", changes);
-    }
-    // generate textual report from changes
-    const report = (0, report_1.generateReport)(changes);
-    util.printDebug("report", report);
-    // set outputs
-    core.setOutput("commit-message", report.title);
-    core.setOutput("pull-request-title", report.title);
-    core.setOutput("pull-request-body", report.body);
-}
-try {
-    main();
-}
-catch (error) {
-    const errorMsg = error instanceof Error ? error : "unknown error type";
-    core.setFailed(errorMsg);
-}
-//# sourceMappingURL=main.js.map
-
-/***/ }),
-
-/***/ 5566:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.flakeUpdate = void 0;
-const core = __importStar(__nccwpck_require__(2186));
-const util = __importStar(__nccwpck_require__(6568));
-async function flakeUpdate(dir) {
-    core.info("Updating the flake inputs...");
-    const output = await util.runCommand("nix", ["flake", "update"], dir);
-    core.group("Output of `nix flake update`", async () => {
-        core.info(output.stderr);
-    });
-}
-exports.flakeUpdate = flakeUpdate;
-//# sourceMappingURL=command.js.map
-
-/***/ }),
-
-/***/ 5814:
+/***/ 5938:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -5647,6 +5529,86 @@ exports.getFlakeRefUri = getFlakeRefUri;
 
 /***/ }),
 
+/***/ 6971:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const core = __importStar(__nccwpck_require__(2186));
+const changes_1 = __nccwpck_require__(801);
+const lockfile_1 = __nccwpck_require__(5938);
+const report_1 = __nccwpck_require__(9497);
+const util = __importStar(__nccwpck_require__(6568));
+async function main() {
+    const projectDir = process.cwd();
+    // read current lockfile
+    const oldLockfile = await (0, lockfile_1.loadLockfile)(projectDir);
+    util.printDebug("old lockfile", oldLockfile);
+    // update flake's inputs
+    await recreateLockfile(projectDir);
+    // read updated lockfile
+    const newLockfile = await (0, lockfile_1.loadLockfile)(projectDir);
+    util.printDebug("new lockfile", newLockfile);
+    // get changes between lockfiles
+    const changes = (0, changes_1.compareLockfiles)(oldLockfile, newLockfile);
+    const changesCount = changes.updated.size + changes.added.size + changes.removed.size;
+    if (changesCount === 0) {
+        core.info("The nodes in the lockfile did not change.");
+        return;
+    }
+    else {
+        util.printDebug("changes", changes);
+    }
+    // generate textual report from changes
+    const report = (0, report_1.generateReport)(changes);
+    util.printDebug("report", report);
+    // set outputs
+    core.setOutput("commit-message", report.title);
+    core.setOutput("pull-request-title", report.title);
+    core.setOutput("pull-request-body", report.body);
+}
+async function recreateLockfile(dir) {
+    core.info("Updating the flake's inputs...");
+    const output = await util.runCommand("nix", ["flake", "update"], dir);
+    core.group("Output of `nix flake update`", async () => {
+        core.info(output.stderr);
+    });
+}
+try {
+    main();
+}
+catch (error) {
+    const errorMsg = error instanceof Error ? error : "unknown error type";
+    core.setFailed(errorMsg);
+}
+//# sourceMappingURL=main.js.map
+
+/***/ }),
+
 /***/ 9497:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -5654,7 +5616,7 @@ exports.getFlakeRefUri = getFlakeRefUri;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateReport = void 0;
-const lockfile_1 = __nccwpck_require__(5814);
+const lockfile_1 = __nccwpck_require__(5938);
 function generateReport(changes) {
     const nodeLabels = [changes.updated, changes.added, changes.removed]
         .map((nodesMap) => Array.from(nodesMap.keys()))

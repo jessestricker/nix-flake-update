@@ -1,6 +1,6 @@
 import equal from "fast-deep-equal/es6";
 
-import { Lockfile, Node } from "./nix/lockfile";
+import { Lockfile, Node } from "./lockfile";
 
 /**
  * The set of updated, added and removed nodes between two lockfiles.
