@@ -13,11 +13,12 @@
     "url": "https://github.com/jessestricker/nix-update-action/issues"
   },
   "homepage": "https://github.com/jessestricker/nix-update-action#readme",
+  "type": "module",
   "main": "out/main.js",
   "scripts": {
     "build": "tsc",
     "prepackage": "npm run build",
-    "package": "ncc build --source-map --quiet",
+    "package": "ncc build --target es2022 --source-map --quiet",
     "prerun": "npm run build",
     "run": "node .",
     "format": "prettier --write .",

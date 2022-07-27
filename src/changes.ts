@@ -1,6 +1,6 @@
-import equal from "fast-deep-equal/es6";
+import equal from "fast-deep-equal/es6/index.js";
 
-import { Lockfile, Node } from "./lockfile";
+import { Lockfile, Node } from "./lockfile.js";
 
 /**
  * The set of updated, added and removed nodes between two lockfiles.

@@ -1,9 +1,9 @@
 import * as core from "@actions/core";
 
-import { compareLockfiles } from "./changes";
-import { loadLockfile } from "./lockfile";
-import { generateReport } from "./report";
-import * as util from "./util";
+import { compareLockfiles } from "./changes.js";
+import { loadLockfile } from "./lockfile.js";
+import { generateReport } from "./report.js";
+import * as util from "./util.js";
 
 async function main() {
   const projectDir = process.cwd();

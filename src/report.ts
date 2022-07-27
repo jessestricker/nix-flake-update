@@ -1,5 +1,10 @@
-import { LockfileChanges, NodeUpdate } from "./changes";
-import { FlakeRef, getFlakeRefUri, GitHubFlakeRefJson, Node } from "./lockfile";
+import { LockfileChanges, NodeUpdate } from "./changes.js";
+import {
+  FlakeRef,
+  getFlakeRefUri,
+  GitHubFlakeRefJson,
+  Node,
+} from "./lockfile.js";
 
 export interface Report {
   title: string;
