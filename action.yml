@@ -1,6 +1,10 @@
 name: Nix Update
-description: Keep your Nix Flake inputs up-to-date!
 author: Jesse Stricker
+description: Keep your Nix Flake inputs up-to-date!
+branding:
+  color: purple
+  icon: corner-right-up
+
 runs:
   using: node16
   main: dist/index.js
