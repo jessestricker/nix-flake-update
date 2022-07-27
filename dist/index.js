@@ -5350,71 +5350,20 @@ exports.debug = debug; // for test
 
 /***/ }),
 
-/***/ 6971:
+/***/ 801:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const core = __importStar(__nccwpck_require__(2186));
+exports.compareLockfiles = void 0;
 const es6_1 = __importDefault(__nccwpck_require__(11));
-const nixCommand = __importStar(__nccwpck_require__(5566));
-const lockfile_1 = __nccwpck_require__(5814);
-const util = __importStar(__nccwpck_require__(6568));
-async function main() {
-    const projectDir = process.cwd();
-    // read current lockfile
-    const oldLockfile = await (0, lockfile_1.loadLockfile)(projectDir);
-    util.printDebug("old lockfile", oldLockfile);
-    // update flake inputs
-    await nixCommand.flakeUpdate(projectDir);
-    // read updated lockfile
-    const newLockfile = await (0, lockfile_1.loadLockfile)(projectDir);
-    util.printDebug("new lockfile", newLockfile);
-    // get changes between lockfiles
-    const changes = compareLockfiles(oldLockfile, newLockfile);
-    const changesCount = changes.updated.size + changes.added.size + changes.removed.size;
-    if (changesCount === 0) {
-        core.info("The nodes in the lockfile did not change.");
-        return;
-    }
-    else {
-        util.printDebug("changes", changes);
-    }
-    // generate textual report from changes
-    const report = generateReport(changes);
-    util.printDebug("report", report);
-    // set outputs
-    core.setOutput("commit-message", report.title);
-    core.setOutput("pull-request-title", report.title);
-    core.setOutput("pull-request-body", report.body);
-}
+/**
+ * Compares two lockfiles and returns the set of changes.
+ */
 function compareLockfiles(oldLockfile, newLockfile) {
     // inputs are matched by node label
     const changes = {
@@ -5447,68 +5396,73 @@ function compareLockfiles(oldLockfile, newLockfile) {
     }
     return changes;
 }
-function generateReport(changes) {
-    const nodeLabels = [changes.updated, changes.added, changes.removed]
-        .map((nodesMap) => Array.from(nodesMap.keys()))
-        .flat();
-    const quotedNodeLabels = nodeLabels
-        .map((nodeLabel) => "`" + nodeLabel + "`")
-        .join(", ");
-    // generate title
-    const title = (() => {
-        const pluralS = nodeLabels.length !== 1 ? "s" : "";
-        return `build(deps): bump flake input${pluralS} ${quotedNodeLabels}`;
-    })();
-    // generate body
-    function generateSimpleSection(title, nodes) {
-        let text = "## " + title + "\n\n";
-        for (const [nodeLabel, node] of nodes) {
-            const uri = (0, lockfile_1.getFlakeRefUri)(node.locked);
-            text += "* **" + nodeLabel + "**: `" + uri + "`\n";
-        }
-        return text;
+exports.compareLockfiles = compareLockfiles;
+//# sourceMappingURL=changes.js.map
+
+/***/ }),
+
+/***/ 6971:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
     }
-    function generateDiffingSection(title, nodes) {
-        let text = "## " + title + "\n\n";
-        for (const [nodeLabel, nodeUpdate] of nodes) {
-            const oldUri = (0, lockfile_1.getFlakeRefUri)(nodeUpdate.oldNode.locked);
-            const newUri = (0, lockfile_1.getFlakeRefUri)(nodeUpdate.newNode.locked);
-            text += "* **" + nodeLabel + "**:\n";
-            text += "  `" + oldUri + "` →\n";
-            text += "  `" + newUri + "`\n";
-            const compareUrl = getCompareUrl(nodeUpdate.oldNode.locked, nodeUpdate.newNode.locked);
-            if (compareUrl !== undefined) {
-                text += `  __([view changes](${compareUrl}))__\n`;
-            }
-        }
-        return text;
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const core = __importStar(__nccwpck_require__(2186));
+const changes_1 = __nccwpck_require__(801);
+const nixCommand = __importStar(__nccwpck_require__(5566));
+const lockfile_1 = __nccwpck_require__(5814);
+const report_1 = __nccwpck_require__(9497);
+const util = __importStar(__nccwpck_require__(6568));
+async function main() {
+    const projectDir = process.cwd();
+    // read current lockfile
+    const oldLockfile = await (0, lockfile_1.loadLockfile)(projectDir);
+    util.printDebug("old lockfile", oldLockfile);
+    // update flake inputs
+    await nixCommand.flakeUpdate(projectDir);
+    // read updated lockfile
+    const newLockfile = await (0, lockfile_1.loadLockfile)(projectDir);
+    util.printDebug("new lockfile", newLockfile);
+    // get changes between lockfiles
+    const changes = (0, changes_1.compareLockfiles)(oldLockfile, newLockfile);
+    const changesCount = changes.updated.size + changes.added.size + changes.removed.size;
+    if (changesCount === 0) {
+        core.info("The nodes in the lockfile did not change.");
+        return;
     }
-    let body = "";
-    if (changes.updated.size !== 0) {
-        body += generateDiffingSection("Updated inputs", changes.updated) + "\n";
+    else {
+        util.printDebug("changes", changes);
     }
-    if (changes.added.size !== 0) {
-        body += generateSimpleSection("Added inputs", changes.added) + "\n";
-    }
-    if (changes.removed.size !== 0) {
-        body += generateSimpleSection("Removed inputs", changes.removed) + "\n";
-    }
-    return { title, body };
-}
-function getCompareUrl(oldFlakeRef, newFlakeRef) {
-    if (
-    // both flakes are GitHub flakes
-    lockfile_1.GitHubFlakeRefJson.guard(oldFlakeRef) &&
-        lockfile_1.GitHubFlakeRefJson.guard(newFlakeRef) &&
-        // AND they are the same repo
-        oldFlakeRef.owner === newFlakeRef.owner &&
-        oldFlakeRef.repo === newFlakeRef.repo &&
-        // AND the rev is set (this check SHOULD always be true for locked GitHub flake refs)
-        oldFlakeRef.rev !== undefined &&
-        newFlakeRef.rev !== undefined) {
-        return `https://github.com/${oldFlakeRef.owner}/${oldFlakeRef.repo}/compare/${oldFlakeRef.rev}...${newFlakeRef.rev}`;
-    }
-    return undefined;
+    // generate textual report from changes
+    const report = (0, report_1.generateReport)(changes);
+    util.printDebug("report", report);
+    // set outputs
+    core.setOutput("commit-message", report.title);
+    core.setOutput("pull-request-title", report.title);
+    core.setOutput("pull-request-body", report.body);
 }
 try {
     main();
@@ -5690,6 +5644,82 @@ function getFlakeRefUri(flakeRef) {
 }
 exports.getFlakeRefUri = getFlakeRefUri;
 //# sourceMappingURL=lockfile.js.map
+
+/***/ }),
+
+/***/ 9497:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generateReport = void 0;
+const lockfile_1 = __nccwpck_require__(5814);
+function generateReport(changes) {
+    const nodeLabels = [changes.updated, changes.added, changes.removed]
+        .map((nodesMap) => Array.from(nodesMap.keys()))
+        .flat();
+    const quotedNodeLabels = nodeLabels
+        .map((nodeLabel) => "`" + nodeLabel + "`")
+        .join(", ");
+    // generate title
+    const title = (() => {
+        const pluralS = nodeLabels.length !== 1 ? "s" : "";
+        return `build(deps): bump flake input${pluralS} ${quotedNodeLabels}`;
+    })();
+    // generate body
+    function generateSimpleSection(title, nodes) {
+        let text = "## " + title + "\n\n";
+        for (const [nodeLabel, node] of nodes) {
+            const uri = (0, lockfile_1.getFlakeRefUri)(node.locked);
+            text += "* **" + nodeLabel + "**: `" + uri + "`\n";
+        }
+        return text;
+    }
+    function generateDiffingSection(title, nodes) {
+        let text = "## " + title + "\n\n";
+        for (const [nodeLabel, nodeUpdate] of nodes) {
+            const oldUri = (0, lockfile_1.getFlakeRefUri)(nodeUpdate.oldNode.locked);
+            const newUri = (0, lockfile_1.getFlakeRefUri)(nodeUpdate.newNode.locked);
+            text += "* **" + nodeLabel + "**:\n";
+            text += "  `" + oldUri + "` →\n";
+            text += "  `" + newUri + "`\n";
+            const compareUrl = getCompareUrl(nodeUpdate.oldNode.locked, nodeUpdate.newNode.locked);
+            if (compareUrl !== undefined) {
+                text += `  __([view changes](${compareUrl}))__\n`;
+            }
+        }
+        return text;
+    }
+    let body = "";
+    if (changes.updated.size !== 0) {
+        body += generateDiffingSection("Updated inputs", changes.updated) + "\n";
+    }
+    if (changes.added.size !== 0) {
+        body += generateSimpleSection("Added inputs", changes.added) + "\n";
+    }
+    if (changes.removed.size !== 0) {
+        body += generateSimpleSection("Removed inputs", changes.removed) + "\n";
+    }
+    return { title, body };
+}
+exports.generateReport = generateReport;
+function getCompareUrl(oldFlakeRef, newFlakeRef) {
+    if (
+    // both flakes are GitHub flakes
+    lockfile_1.GitHubFlakeRefJson.guard(oldFlakeRef) &&
+        lockfile_1.GitHubFlakeRefJson.guard(newFlakeRef) &&
+        // AND they are the same repo
+        oldFlakeRef.owner === newFlakeRef.owner &&
+        oldFlakeRef.repo === newFlakeRef.repo &&
+        // AND the rev is set (this check SHOULD always be true for locked GitHub flake refs)
+        oldFlakeRef.rev !== undefined &&
+        newFlakeRef.rev !== undefined) {
+        return `https://github.com/${oldFlakeRef.owner}/${oldFlakeRef.repo}/compare/${oldFlakeRef.rev}...${newFlakeRef.rev}`;
+    }
+    return undefined;
+}
+//# sourceMappingURL=report.js.map
 
 /***/ }),
 
