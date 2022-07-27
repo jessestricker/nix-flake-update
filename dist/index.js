@@ -5517,12 +5517,11 @@ function parse(jsonText) {
     }
     // construct lockfile instance from JSON
     const nodes = new Map();
-    for (const nodeLabel in lockfileJson.nodes) {
+    for (const [nodeLabel, nodeJson] of Object.entries(lockfileJson.nodes)) {
         // skip root node
         if (nodeLabel == lockfileJson.root) {
             continue;
         }
-        const nodeJson = lockfileJson.nodes[nodeLabel];
         // parse flake references
         if (nodeJson.locked === undefined || nodeJson.original === undefined) {
             throw new TypeError(`The node ${nodeLabel} is missing the flake references.`);
