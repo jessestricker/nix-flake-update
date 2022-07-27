@@ -7,14 +7,6 @@ export interface FlakeRef {
   [key: string]: boolean | number | string | undefined;
 }
 
-export interface GitHubFlakeRef extends FlakeRef {
-  readonly type: "github";
-  owner: string;
-  repo: string;
-  rev?: string; // a commit hash
-  ref?: string; // a tag/branch name
-}
-
 export interface Node {
   locked: FlakeRef;
   original: FlakeRef;
@@ -99,27 +91,38 @@ export async function loadLockfile(dir: string): Promise<Lockfile> {
 
 function parseLockedFlakeRef(locked: FlakeRefJson): FlakeRef {
   if (GitHubFlakeRefJson.guard(locked)) {
-    const ref: GitHubFlakeRef = {
+    return GitHubFlakeRefJson.check({
       type: "github",
       owner: locked.owner,
       repo: locked.repo,
       rev: rt.String.check(locked.rev),
-    };
-    return ref;
+    });
   }
   return { ...locked };
 }
 
 function parseOriginalFlakeRef(original: FlakeRefJson): FlakeRef {
   if (GitHubFlakeRefJson.guard(original)) {
-    const ref: GitHubFlakeRef = {
+    return GitHubFlakeRefJson.check({
       type: "github",
       owner: original.owner,
       repo: original.repo,
       rev: original.rev,
       ref: original.ref,
-    };
-    return ref;
+    });
   }
   return { ...original };
+}
+
+export function getFlakeRefUri(flakeRef: FlakeRef): string {
+  if (GitHubFlakeRefJson.guard(flakeRef)) {
+    let uri = `github:${flakeRef.owner}/${flakeRef.owner}`;
+    const revOrRef = flakeRef.rev || flakeRef.ref;
+    if (revOrRef !== undefined) {
+      uri += "/" + revOrRef;
+    }
+    return uri;
+  }
+
+  throw new TypeError("Unsupported flake ref type");
 }

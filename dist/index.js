@@ -5399,13 +5399,25 @@ async function main() {
     util.printDebug("new lockfile", newLockfile);
     // get changes between lockfiles
     const changes = compareLockfiles(oldLockfile, newLockfile);
-    util.printDebug("changes", changes);
+    const changesCount = changes.updated.size + changes.added.size + changes.removed.size;
+    if (changesCount === 0) {
+        core.info("The nodes in the lockfile did not change.");
+        return;
+    }
+    else {
+        util.printDebug("changes", changes);
+    }
+    // generate textual report from changes
+    const report = generateReport(changes);
+    core.info(`The pull-request title will be "${report.title}".`);
+    core.summary.addRaw(report.body);
+    await core.summary.write();
 }
 function compareLockfiles(oldLockfile, newLockfile) {
     // inputs are matched by node label
     const changes = {
-        added: new Map(),
         updated: new Map(),
+        added: new Map(),
         removed: new Map(),
     };
     // check for updated and removed nodes
@@ -5432,6 +5444,45 @@ function compareLockfiles(oldLockfile, newLockfile) {
         changes.removed.set(nodeLabel, newNode);
     }
     return changes;
+}
+function generateReport(changes) {
+    const quotedNodeLabels = [changes.updated, changes.added, changes.removed]
+        .flatMap((nodesMap) => Array.from(nodesMap.keys()))
+        .map((nodeLabel) => "`" + nodeLabel + "`")
+        .join(", ");
+    // generate title
+    const title = `build(deps): bump flake inputs ${quotedNodeLabels}`;
+    // generate body
+    function generateSimpleSection(title, nodes) {
+        let text = "## " + title + "\n\n";
+        for (const [nodeLabel, node] of nodes) {
+            const uri = (0, lockfile_1.getFlakeRefUri)(node.locked);
+            text += "* `" + nodeLabel + "`: `" + uri + "`\n";
+        }
+        return text;
+    }
+    function generateDiffingSection(title, nodes) {
+        let text = "## " + title + "\n\n";
+        for (const [nodeLabel, nodeUpdate] of nodes) {
+            const oldUri = (0, lockfile_1.getFlakeRefUri)(nodeUpdate.oldNode.locked);
+            const newUri = (0, lockfile_1.getFlakeRefUri)(nodeUpdate.newNode.locked);
+            text += "* `" + nodeLabel + "`:\n";
+            text += "  `" + oldUri + "`\n";
+            text += "  `" + newUri + "`\n";
+        }
+        return text;
+    }
+    let body = "";
+    if (changes.updated.size !== 0) {
+        body += generateDiffingSection("Updated inputs", changes.updated) + "\n";
+    }
+    if (changes.added.size !== 0) {
+        body += generateSimpleSection("Added inputs", changes.added) + "\n";
+    }
+    if (changes.removed.size !== 0) {
+        body += generateSimpleSection("Removed inputs", changes.removed) + "\n";
+    }
+    return { title, body };
 }
 try {
     main();
@@ -5517,7 +5568,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.loadLockfile = exports.parse = void 0;
+exports.getFlakeRefUri = exports.loadLockfile = exports.parse = void 0;
 const fs = __importStar(__nccwpck_require__(3292));
 const path = __importStar(__nccwpck_require__(1017));
 const rt = __importStar(__nccwpck_require__(5568));
@@ -5579,29 +5630,39 @@ async function loadLockfile(dir) {
 exports.loadLockfile = loadLockfile;
 function parseLockedFlakeRef(locked) {
     if (GitHubFlakeRefJson.guard(locked)) {
-        const ref = {
+        return GitHubFlakeRefJson.check({
             type: "github",
             owner: locked.owner,
             repo: locked.repo,
             rev: rt.String.check(locked.rev),
-        };
-        return ref;
+        });
     }
     return { ...locked };
 }
 function parseOriginalFlakeRef(original) {
     if (GitHubFlakeRefJson.guard(original)) {
-        const ref = {
+        return GitHubFlakeRefJson.check({
             type: "github",
             owner: original.owner,
             repo: original.repo,
             rev: original.rev,
             ref: original.ref,
-        };
-        return ref;
+        });
     }
     return { ...original };
 }
+function getFlakeRefUri(flakeRef) {
+    if (GitHubFlakeRefJson.guard(flakeRef)) {
+        let uri = `github:${flakeRef.owner}/${flakeRef.owner}`;
+        const revOrRef = flakeRef.rev || flakeRef.ref;
+        if (revOrRef !== undefined) {
+            uri += "/" + revOrRef;
+        }
+        return uri;
+    }
+    throw new TypeError("Unsupported flake ref type");
+}
+exports.getFlakeRefUri = getFlakeRefUri;
 //# sourceMappingURL=lockfile.js.map
 
 /***/ }),
