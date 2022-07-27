@@ -5409,9 +5409,11 @@ async function main() {
     }
     // generate textual report from changes
     const report = generateReport(changes);
-    core.info(`The pull-request title will be "${report.title}".`);
-    core.summary.addRaw(report.body);
-    await core.summary.write();
+    util.printDebug("report", report);
+    // set outputs
+    core.setOutput("commit-message", report.title);
+    core.setOutput("pull-request-title", report.title);
+    core.setOutput("pull-request-body", report.body);
 }
 function compareLockfiles(oldLockfile, newLockfile) {
     // inputs are matched by node label

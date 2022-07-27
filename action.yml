@@ -4,3 +4,11 @@ author: Jesse Stricker
 runs:
   using: node16
   main: dist/index.js
+
+outputs:
+  commit-message: |
+    A possible commit message summarizing the changes.
+  pull-request-title: |
+    The title of the pull request to create.
+  pull-request-body: |
+    The body of the pull request to create.
