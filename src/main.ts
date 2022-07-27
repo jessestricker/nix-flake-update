@@ -2,7 +2,14 @@ import * as core from "@actions/core";
 import fastDeepEqual from "fast-deep-equal/es6";
 
 import * as nixCommand from "./nix/command";
-import { getFlakeRefUri, loadLockfile, Lockfile, Node } from "./nix/lockfile";
+import {
+  FlakeRef,
+  getFlakeRefUri,
+  GitHubFlakeRefJson,
+  loadLockfile,
+  Lockfile,
+  Node,
+} from "./nix/lockfile";
 import * as util from "./util";
 
 async function main() {
@@ -142,6 +149,13 @@ function generateReport(changes: LockfileChanges): Report {
       text += "* `" + nodeLabel + "`:\n";
       text += "  `" + oldUri + "`\n";
       text += "  `" + newUri + "`\n";
+      const compareUrl = getCompareUrl(
+        nodeUpdate.oldNode.locked,
+        nodeUpdate.newNode.locked
+      );
+      if (compareUrl !== undefined) {
+        text += `  ([**compare view**](${compareUrl}))\n`;
+      }
     }
     return text;
   }
@@ -158,6 +172,27 @@ function generateReport(changes: LockfileChanges): Report {
   }
 
   return { title, body };
+}
+
+function getCompareUrl(
+  oldFlakeRef: FlakeRef,
+  newFlakeRef: FlakeRef
+): string | undefined {
+  if (
+    // both flakes are GitHub flakes
+    GitHubFlakeRefJson.guard(oldFlakeRef) &&
+    GitHubFlakeRefJson.guard(newFlakeRef) &&
+    // AND they are the same repo
+    oldFlakeRef.owner === newFlakeRef.owner &&
+    oldFlakeRef.repo === newFlakeRef.repo &&
+    // AND the rev is set (this check SHOULD always be true for locked GitHub flake refs)
+    oldFlakeRef.rev !== undefined &&
+    newFlakeRef.rev !== undefined
+  ) {
+    return `https://github.com/${oldFlakeRef.owner}/${oldFlakeRef.repo}/compare/${oldFlakeRef.rev}...${newFlakeRef.rev}`;
+  }
+
+  return undefined;
 }
 
 try {

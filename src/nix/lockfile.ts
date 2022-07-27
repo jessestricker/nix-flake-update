@@ -20,13 +20,15 @@ export interface Lockfile {
   nodes: Map<string, Node>;
 }
 
-const GitHubFlakeRefJson = rt.Record({
+export const GitHubFlakeRefJson = rt.Record({
   type: rt.Literal("github"),
   owner: rt.String,
   repo: rt.String,
   rev: rt.Optional(rt.String),
   ref: rt.Optional(rt.String),
 });
+export type GitHubFlakeRefJson = rt.Static<typeof GitHubFlakeRefJson>;
+
 const UnsupportedFlakeRefJson = rt.Intersect(
   rt.Record({ type: rt.String }),
   rt.Dictionary(rt.Union(rt.String, rt.Number), rt.String)

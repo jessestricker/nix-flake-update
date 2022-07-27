@@ -5476,6 +5476,10 @@ function generateReport(changes) {
             text += "* `" + nodeLabel + "`:\n";
             text += "  `" + oldUri + "`\n";
             text += "  `" + newUri + "`\n";
+            const compareUrl = getCompareUrl(nodeUpdate.oldNode.locked, nodeUpdate.newNode.locked);
+            if (compareUrl !== undefined) {
+                text += `  ([**compare view**](${compareUrl}))\n`;
+            }
         }
         return text;
     }
@@ -5490,6 +5494,21 @@ function generateReport(changes) {
         body += generateSimpleSection("Removed inputs", changes.removed) + "\n";
     }
     return { title, body };
+}
+function getCompareUrl(oldFlakeRef, newFlakeRef) {
+    if (
+    // both flakes are GitHub flakes
+    lockfile_1.GitHubFlakeRefJson.guard(oldFlakeRef) &&
+        lockfile_1.GitHubFlakeRefJson.guard(newFlakeRef) &&
+        // AND they are the same repo
+        oldFlakeRef.owner === newFlakeRef.owner &&
+        oldFlakeRef.repo === newFlakeRef.repo &&
+        // AND the rev is set (this check SHOULD always be true for locked GitHub flake refs)
+        oldFlakeRef.rev !== undefined &&
+        newFlakeRef.rev !== undefined) {
+        return `https://github.com/${oldFlakeRef.owner}/${oldFlakeRef.repo}/compare/${oldFlakeRef.rev}...${newFlakeRef.rev}`;
+    }
+    return undefined;
 }
 try {
     main();
@@ -5575,11 +5594,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getFlakeRefUri = exports.loadLockfile = exports.parse = void 0;
+exports.getFlakeRefUri = exports.loadLockfile = exports.parse = exports.GitHubFlakeRefJson = void 0;
 const fs = __importStar(__nccwpck_require__(3292));
 const path = __importStar(__nccwpck_require__(1017));
 const rt = __importStar(__nccwpck_require__(5568));
-const GitHubFlakeRefJson = rt.Record({
+exports.GitHubFlakeRefJson = rt.Record({
     type: rt.Literal("github"),
     owner: rt.String,
     repo: rt.String,
@@ -5587,7 +5606,7 @@ const GitHubFlakeRefJson = rt.Record({
     ref: rt.Optional(rt.String),
 });
 const UnsupportedFlakeRefJson = rt.Intersect(rt.Record({ type: rt.String }), rt.Dictionary(rt.Union(rt.String, rt.Number), rt.String));
-const FlakeRefJson = rt.Union(UnsupportedFlakeRefJson, GitHubFlakeRefJson);
+const FlakeRefJson = rt.Union(UnsupportedFlakeRefJson, exports.GitHubFlakeRefJson);
 const NodeJson = rt.Record({
     inputs: rt.Optional(rt.Dictionary(rt.String, rt.String)),
     locked: rt.Optional(FlakeRefJson),
@@ -5636,8 +5655,8 @@ async function loadLockfile(dir) {
 }
 exports.loadLockfile = loadLockfile;
 function parseLockedFlakeRef(locked) {
-    if (GitHubFlakeRefJson.guard(locked)) {
-        return GitHubFlakeRefJson.check({
+    if (exports.GitHubFlakeRefJson.guard(locked)) {
+        return exports.GitHubFlakeRefJson.check({
             type: "github",
             owner: locked.owner,
             repo: locked.repo,
@@ -5647,8 +5666,8 @@ function parseLockedFlakeRef(locked) {
     return { ...locked };
 }
 function parseOriginalFlakeRef(original) {
-    if (GitHubFlakeRefJson.guard(original)) {
-        return GitHubFlakeRefJson.check({
+    if (exports.GitHubFlakeRefJson.guard(original)) {
+        return exports.GitHubFlakeRefJson.check({
             type: "github",
             owner: original.owner,
             repo: original.repo,
@@ -5659,7 +5678,7 @@ function parseOriginalFlakeRef(original) {
     return { ...original };
 }
 function getFlakeRefUri(flakeRef) {
-    if (GitHubFlakeRefJson.guard(flakeRef)) {
+    if (exports.GitHubFlakeRefJson.guard(flakeRef)) {
         let uri = `github:${flakeRef.owner}/${flakeRef.repo}`;
         const revOrRef = flakeRef.rev || flakeRef.ref;
         if (revOrRef !== undefined) {
