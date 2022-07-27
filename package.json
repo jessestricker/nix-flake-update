@@ -1,13 +1,11 @@
 {
   "private": true,
   "type": "module",
-  "main": "out/main.js",
+  "main": "dist/index.js",
   "scripts": {
-    "clean": "rm --recursive --force dist/ out/",
-    "build": "tsc",
-    "prepackage": "npm run build",
+    "prepackage": "tsc",
     "package": "ncc build --target es2022 --source-map --quiet",
-    "prerun": "npm run build",
+    "prerun": "npm run package",
     "run": "node .",
     "format": "prettier --write .",
     "format-check": "prettier --check .",
