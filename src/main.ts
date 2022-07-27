@@ -101,13 +101,18 @@ interface Report {
 }
 
 function generateReport(changes: LockfileChanges): Report {
-  const quotedNodeLabels = [changes.updated, changes.added, changes.removed]
-    .flatMap((nodesMap) => Array.from(nodesMap.keys()))
+  const nodeLabels = [changes.updated, changes.added, changes.removed]
+    .map((nodesMap) => Array.from(nodesMap.keys()))
+    .flat();
+  const quotedNodeLabels = nodeLabels
     .map((nodeLabel) => "`" + nodeLabel + "`")
     .join(", ");
 
   // generate title
-  const title = `build(deps): bump flake inputs ${quotedNodeLabels}`;
+  const title = (() => {
+    const pluralS = nodeLabels.length !== 1 ? "s" : "";
+    return `build(deps): bump flake input${pluralS} ${quotedNodeLabels}`;
+  })();
 
   // generate body
 
