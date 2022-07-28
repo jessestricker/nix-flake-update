@@ -5624,7 +5624,7 @@ function generateReport(changes) {
         let text = "## " + title + "\n\n";
         for (const [nodeLabel, node] of nodes) {
             const uri = getFlakeRefUri(node.locked);
-            text += "* **" + nodeLabel + "**: `" + uri + "`\n";
+            text += "* **" + nodeLabel + ":** `" + uri + "`\n";
         }
         return text;
     }
@@ -5633,7 +5633,7 @@ function generateReport(changes) {
         for (const [nodeLabel, nodeUpdate] of nodes) {
             const oldUri = getFlakeRefUri(nodeUpdate.oldNode.locked);
             const newUri = getFlakeRefUri(nodeUpdate.newNode.locked);
-            text += "* **" + nodeLabel + "**:\n";
+            text += "* **" + nodeLabel + ":**\n";
             text += "  `" + oldUri + "` →\n";
             text += "  `" + newUri + "`\n";
             const compareUrl = getCompareUrl(nodeUpdate.oldNode.locked, nodeUpdate.newNode.locked);
@@ -5645,13 +5645,13 @@ function generateReport(changes) {
     }
     let body = "";
     if (changes.updated.size !== 0) {
-        body += generateDiffingSection("Updated inputs", changes.updated) + "\n";
+        body += generateDiffingSection("Updated Inputs", changes.updated) + "\n";
     }
     if (changes.added.size !== 0) {
-        body += generateSimpleSection("Added inputs", changes.added) + "\n";
+        body += generateSimpleSection("Added Inputs", changes.added) + "\n";
     }
     if (changes.removed.size !== 0) {
-        body += generateSimpleSection("Removed inputs", changes.removed) + "\n";
+        body += generateSimpleSection("Removed Inputs", changes.removed) + "\n";
     }
     return { title, body };
 }
