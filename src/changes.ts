@@ -11,20 +11,21 @@ export interface LockfileChanges {
   removed: Map<string, Node>;
 }
 
+/**
+ * The old and new versions of an updated node.
+ */
 export interface NodeUpdate {
   oldNode: Node;
   newNode: Node;
 }
 
 /**
- * Compares two lockfiles and returns the set of changes.
+ * Compare two lockfiles and return the set of changes.
  */
 export function compareLockfiles(
   oldLockfile: Lockfile,
   newLockfile: Lockfile
 ): LockfileChanges {
-  // inputs are matched by node label
-
   const changes: LockfileChanges = {
     updated: new Map(),
     added: new Map(),
@@ -35,29 +36,22 @@ export function compareLockfiles(
   for (const [nodeLabel, oldNode] of oldLockfile.nodes) {
     const newNode = newLockfile.nodes.get(nodeLabel);
 
+    // check if the node no longer exists in new lockfile
     if (newNode === undefined) {
-      // removed node
       changes.removed.set(nodeLabel, oldNode);
-      continue;
     }
-
-    if (equal(oldNode.locked, newNode.locked)) {
-      // nothing changed
-      continue;
+    // check if the locked flake reference was updated
+    else if (!equal(oldNode.locked, newNode.locked)) {
+      changes.updated.set(nodeLabel, { oldNode, newNode });
     }
-
-    // updated node
-    changes.updated.set(nodeLabel, { oldNode: oldNode, newNode: newNode });
   }
 
   // check for added nodes
   for (const [nodeLabel, newNode] of newLockfile.nodes) {
-    if (oldLockfile.nodes.has(nodeLabel)) {
-      continue;
+    // check if the node did not exist in the old lockfile
+    if (!oldLockfile.nodes.has(nodeLabel)) {
+      changes.removed.set(nodeLabel, newNode);
     }
-
-    // added node
-    changes.removed.set(nodeLabel, newNode);
   }
 
   return changes;
