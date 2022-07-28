@@ -5525,8 +5525,9 @@ const GitHubFlakeRefJson = lib.Record({
 });
 const UnsupportedFlakeRefJson = lib.Intersect(lib.Record({ type: lib.String }), lib.Dictionary(lib.Union(lib.String, lib.Number), lib.String));
 const FlakeRefJson = lib.Union(UnsupportedFlakeRefJson, GitHubFlakeRefJson);
+const InputsJson = lib.Dictionary(lib.Union(lib.String, lib.Array(lib.String)), lib.String);
 const NodeJson = lib.Record({
-    inputs: lib.Optional(lib.Dictionary(lib.String, lib.String)),
+    inputs: lib.Optional(InputsJson),
     locked: lib.Optional(FlakeRefJson),
     original: lib.Optional(FlakeRefJson),
     flake: lib.Optional(lib.Boolean),
