@@ -50,7 +50,7 @@ export function compareLockfiles(
   for (const [nodeLabel, newNode] of newLockfile.nodes) {
     // check if the node did not exist in the old lockfile
     if (!oldLockfile.nodes.has(nodeLabel)) {
-      changes.removed.set(nodeLabel, newNode);
+      changes.added.set(nodeLabel, newNode);
     }
   }
 
