@@ -9,6 +9,17 @@
     "format-check": "prettier --check .",
     "lint": "eslint ."
   },
+  "release": {
+    "branches": [
+      "main"
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/github"
+    ],
+    "dryRun": true
+  },
   "devDependencies": {
     "@types/node": "16.11.45",
     "@typescript-eslint/eslint-plugin": "5.31.0",
@@ -16,6 +27,7 @@
     "@vercel/ncc": "0.34.0",
     "eslint": "8.20.0",
     "prettier": "2.7.1",
+    "semantic-release": "19.0.3",
     "typescript": "4.7.4"
   },
   "dependencies": {
