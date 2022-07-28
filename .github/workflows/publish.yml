@@ -20,8 +20,8 @@ jobs:
       - name: Install dependencies
         run: nix develop -i -c npm ci
 
-      - name: Build & Package
-        run: nix develop -i -c npm run package
+      - name: Build
+        run: nix develop -i -c npm run build
 
       - name: Upload distribution and create tags
         uses: JasonEtco/build-and-tag-action@v2
