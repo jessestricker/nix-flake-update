@@ -5,11 +5,16 @@ on:
 
 jobs:
   release:
-    name: Release
+    name: Build & Release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Get Git commit hash
+        id: get-commit
+        run: |
+          echo "::set-output name=hash::$(git rev-list --max-count=1 --abbrev-commit HEAD)"
+
       - name: Set up Nix
         uses: nixbuild/nix-quick-install-action@v16
         with:
@@ -17,7 +22,16 @@ jobs:
       - name: Install dependencies
         run: nix develop -i -c npm ci
 
+      - name: Clean
+        run: nix develop -i -c npm run clean
+      - name: Build
+        run: nix develop -i -c npm run build
+      - name: Commit & Push
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "chore: update distribution to ${{ steps.get-commit.outputs.hash }}"
+
       - name: Release
+        run: nix develop -c npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: nix develop -c npx semantic-release
