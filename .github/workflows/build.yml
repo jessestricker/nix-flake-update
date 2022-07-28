@@ -1,4 +1,4 @@
-name: Package
+name: Build
 
 on:
   push:
@@ -6,12 +6,17 @@ on:
     paths-ignore: [dist/**]
 
 jobs:
-  package:
-    name: Package
+  build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Get Git commit hash
+        id: get-commit
+        run: |
+          echo "::set-output name=hash::$(git rev-list --max-count=1 --abbrev-commit HEAD)"
+
       - name: Set up Nix
         uses: nixbuild/nix-quick-install-action@v16
         with:
@@ -19,15 +24,11 @@ jobs:
       - name: Install dependencies
         run: nix develop -i -c npm ci
 
-      - name: Clean old distribution
+      - name: Clean
         run: nix develop -i -c npm run clean
-      - name: Build & Package
+      - name: Build
         run: nix develop -i -c npm run build
 
-      - name: Get Git commit hash
-        id: get-commit
-        run: |
-          echo "::set-output name=hash::$(git rev-list --max-count=1 --abbrev-commit HEAD)"
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
         with:
@@ -37,4 +38,4 @@ jobs:
           title: "chore: update distribution to ${{ steps.get-commit.outputs.hash }}"
           body: |
             This pull request updates the contents of the distribution folder
-            to reflect the latest packaged sources.
+            to reflect the latest built sources.
