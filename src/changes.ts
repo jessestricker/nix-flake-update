@@ -13,6 +13,13 @@ export class LockfileChanges {
   public get size(): number {
     return this.updated.size + this.added.size + this.removed.size;
   }
+
+  public get nodeLabels(): string[] {
+    return [this.updated, this.added, this.removed]
+      .map((nodesMap) => Array.from(nodesMap.keys()))
+      .map((labels) => labels.sort())
+      .flat();
+  }
 }
 
 /**

@@ -1,3 +1,5 @@
+import assert from "assert/strict";
+
 import { LockfileChanges, NodeUpdate } from "./changes.js";
 import {
   FlakeRef,
@@ -5,74 +7,95 @@ import {
   GitHubFlakeRefJson,
   Node,
 } from "./lockfile.js";
+import { transformValues } from "./util/itererables.js";
 
+/**
+ * A textual report of the lockfile changes.
+ */
 export interface Report {
   title: string;
   body: string;
 }
 
+/**
+ * Generate a report mentioning all updated, added and removed nodes.
+ *
+ * @param changes must not be empty
+ */
 export function generateReport(changes: LockfileChanges): Report {
-  const nodeLabels = [changes.updated, changes.added, changes.removed]
-    .map((nodesMap) => Array.from(nodesMap.keys()))
-    .flat();
-  const quotedNodeLabels = nodeLabels
-    .map((nodeLabel) => "`" + nodeLabel + "`")
-    .join(", ");
-
-  // generate title
-  const title = (() => {
-    const pluralS = nodeLabels.length !== 1 ? "s" : "";
-    return `build(deps): bump flake input${pluralS} ${quotedNodeLabels}`;
-  })();
-
-  // generate body
-
-  function generateSimpleSection(
-    title: string,
-    nodes: Map<string, Node>
-  ): string {
-    let text = "## " + title + "\n\n";
-    for (const [nodeLabel, node] of nodes) {
-      const uri = getFlakeRefUri(node.locked);
-      text += "* **" + nodeLabel + ":** `" + uri + "`\n";
-    }
-    return text;
-  }
-
-  function generateDiffingSection(
-    title: string,
-    nodes: Map<string, NodeUpdate>
-  ): string {
-    let text = "## " + title + "\n\n";
-    for (const [nodeLabel, nodeUpdate] of nodes) {
-      const oldUri = getFlakeRefUri(nodeUpdate.oldNode.locked);
-      const newUri = getFlakeRefUri(nodeUpdate.newNode.locked);
-      text += "* **" + nodeLabel + ":**\n";
-      text += "  `" + oldUri + "` →\n";
-      text += "  `" + newUri + "`\n";
-      const compareUrl = getCompareUrl(
-        nodeUpdate.oldNode.locked,
-        nodeUpdate.newNode.locked
-      );
-      if (compareUrl !== undefined) {
-        text += `  __([view changes](${compareUrl}))__\n`;
-      }
-    }
-    return text;
-  }
-
-  let body = "";
-  if (changes.updated.size !== 0) {
-    body += generateDiffingSection("Updated Inputs", changes.updated) + "\n";
-  }
-  if (changes.added.size !== 0) {
-    body += generateSimpleSection("Added Inputs", changes.added) + "\n";
-  }
-  if (changes.removed.size !== 0) {
-    body += generateSimpleSection("Removed Inputs", changes.removed) + "\n";
-  }
-
+  assert.notEqual(changes.size, 0);
+  const title = generateTitle(changes);
+  const body = generateBody(changes);
   return { title, body };
+}
+
+function generateTitle(changes: LockfileChanges): string {
+  const nodeLabels = changes.nodeLabels
+    .map((label) => `\`${label}\``)
+    .join(", ");
+  const inputs = changes.size === 1 ? "input" : "inputs";
+  const title = `build(deps): bump flake ${inputs} ${nodeLabels}`;
+  return title;
+}
+
+function generateBody(changes: LockfileChanges): string {
+  let body = "";
+  body += generateBodyDiffingSection("Updated Inputs", changes.updated);
+  body += generateBodySimpleSection("Added Inputs", changes.added);
+  body += generateBodySimpleSection("Removed Inputs", changes.removed);
+  return body;
+}
+
+function generateBodyDiffingSection(
+  title: string,
+  nodes: Map<string, NodeUpdate>
+): string {
+  const items = transformValues(nodes, (nodeUpdate) => {
+    const oldFlakeRefUri = getFlakeRefUri(nodeUpdate.oldNode.locked);
+    const newFlakeRefUri = getFlakeRefUri(nodeUpdate.newNode.locked);
+    let text = "";
+    text += "\n";
+    text += `  \`${oldFlakeRefUri}\` →\n`;
+    text += `  \`${newFlakeRefUri}\``;
+    const compareUrl = getCompareUrl(
+      nodeUpdate.oldNode.locked,
+      nodeUpdate.newNode.locked
+    );
+    if (compareUrl !== undefined) {
+      text += "\n";
+      text += `  __([view changes](${compareUrl}))__`;
+    }
+    return text;
+  });
+  return generateBodySection(title, items);
+}
+
+function generateBodySimpleSection(
+  title: string,
+  nodes: Map<string, Node>
+): string {
+  const items = transformValues(nodes, (node) => {
+    const flakeRefUri = getFlakeRefUri(node.locked);
+    return `\`${flakeRefUri}\``;
+  });
+  return generateBodySection(title, items);
+}
+
+function generateBodySection(
+  title: string,
+  items: Map<string, string>
+): string {
+  if (items.size === 0) {
+    return "";
+  }
+  let text = "";
+  text += `## ${title}\n`;
+  text += "\n";
+  for (const [label, desc] of items) {
+    text += `* __${label}:__ ${desc}\n`;
+  }
+  text += "\n";
+  return text;
 }
 
 function getCompareUrl(
