@@ -21,13 +21,10 @@ async function main() {
 
   // get changes between lockfiles
   const changes = compareLockfiles(oldLockfile, newLockfile);
-  const changesCount =
-    changes.updated.size + changes.added.size + changes.removed.size;
-  if (changesCount === 0) {
+  util.printDebug("changes", changes);
+  if (changes.size === 0) {
     core.info("The nodes in the lockfile did not change.");
     return;
-  } else {
-    util.printDebug("changes", changes);
   }
 
   // generate textual report from changes

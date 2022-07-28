@@ -5,18 +5,27 @@ import { Lockfile, Node } from "./lockfile.js";
 /**
  * The set of updated, added and removed nodes between two lockfiles.
  */
-export interface LockfileChanges {
-  updated: Map<string, NodeUpdate>;
-  added: Map<string, Node>;
-  removed: Map<string, Node>;
+export class LockfileChanges {
+  updated: Map<string, NodeUpdate> = new Map();
+  added: Map<string, Node> = new Map();
+  removed: Map<string, Node> = new Map();
+
+  public get size(): number {
+    return this.updated.size + this.added.size + this.removed.size;
+  }
 }
 
 /**
  * The old and new versions of an updated node.
  */
-export interface NodeUpdate {
+export class NodeUpdate {
   oldNode: Node;
   newNode: Node;
+
+  constructor(oldNode: Node, newNode: Node) {
+    this.oldNode = oldNode;
+    this.newNode = newNode;
+  }
 }
 
 /**
@@ -26,11 +35,7 @@ export function compareLockfiles(
   oldLockfile: Lockfile,
   newLockfile: Lockfile
 ): LockfileChanges {
-  const changes: LockfileChanges = {
-    updated: new Map(),
-    added: new Map(),
-    removed: new Map(),
-  };
+  const changes = new LockfileChanges();
 
   // check for updated and removed nodes
   for (const [nodeLabel, oldNode] of oldLockfile.nodes) {
