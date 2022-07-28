@@ -3,6 +3,7 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
+    "clean": "rm --recursive --force dist/",
     "build": "ncc build --target es2022 --source-map --quiet src/main.ts",
     "format": "prettier --write .",
     "format-check": "prettier --check .",
