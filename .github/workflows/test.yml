@@ -1,0 +1,31 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+    paths: [dist/**]
+
+jobs:
+  integration:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Nix
+        uses: nixbuild/nix-quick-install-action@v16
+        with:
+          nix_conf: experimental-features = nix-command flakes
+
+      - name: Run this action
+        id: nix-update
+        uses: ./
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v4
+        with:
+          branch: nix-update
+          assignees: jessestricker
+          commit-message: ${{ steps.nix-update.outputs.commit-message }}
+          title: ${{ steps.nix-update.outputs.pull-request-title }}
+          body: ${{ steps.nix-update.outputs.pull-request-body }}
