@@ -17,8 +17,7 @@
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
       "@semantic-release/github"
-    ],
-    "dryRun": true
+    ]
   },
   "devDependencies": {
     "@types/node": "16.11.45",
