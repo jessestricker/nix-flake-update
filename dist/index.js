@@ -5301,6 +5301,14 @@ exports.debug = debug; // for test
 
 /***/ }),
 
+/***/ 3458:
+/***/ ((module) => {
+
+module.exports = eval("require")("assert/strict");
+
+
+/***/ }),
+
 /***/ 9491:
 /***/ ((module) => {
 
@@ -5471,37 +5479,56 @@ var es6_default = /*#__PURE__*/__nccwpck_require__.n(es6);
 ;// CONCATENATED MODULE: ./src/changes.ts
 
 /**
- * Compares two lockfiles and returns the set of changes.
+ * The set of updated, added and removed nodes between two lockfiles.
+ */
+class LockfileChanges {
+    updated = new Map();
+    added = new Map();
+    removed = new Map();
+    get size() {
+        return this.updated.size + this.added.size + this.removed.size;
+    }
+    get nodeLabels() {
+        return [this.updated, this.added, this.removed]
+            .map((nodesMap) => Array.from(nodesMap.keys()))
+            .map((labels) => labels.sort())
+            .flat();
+    }
+}
+/**
+ * The old and new versions of an updated node.
+ */
+class NodeUpdate {
+    oldNode;
+    newNode;
+    constructor(oldNode, newNode) {
+        this.oldNode = oldNode;
+        this.newNode = newNode;
+    }
+}
+/**
+ * Compare two lockfiles and return the set of changes.
  */
 function compareLockfiles(oldLockfile, newLockfile) {
-    // inputs are matched by node label
-    const changes = {
-        updated: new Map(),
-        added: new Map(),
-        removed: new Map(),
-    };
+    const changes = new LockfileChanges();
     // check for updated and removed nodes
     for (const [nodeLabel, oldNode] of oldLockfile.nodes) {
         const newNode = newLockfile.nodes.get(nodeLabel);
+        // check if the node no longer exists in new lockfile
         if (newNode === undefined) {
-            // removed node
             changes.removed.set(nodeLabel, oldNode);
-            continue;
         }
-        if (es6_default()(oldNode.locked, newNode.locked)) {
-            // nothing changed
-            continue;
+        // check if the locked flake reference was updated
+        else if (!es6_default()(oldNode.locked, newNode.locked)) {
+            changes.updated.set(nodeLabel, { oldNode, newNode });
         }
-        // updated node
-        changes.updated.set(nodeLabel, { oldNode: oldNode, newNode: newNode });
     }
     // check for added nodes
     for (const [nodeLabel, newNode] of newLockfile.nodes) {
-        if (oldLockfile.nodes.has(nodeLabel)) {
-            continue;
+        // check if the node did not exist in the old lockfile
+        if (!oldLockfile.nodes.has(nodeLabel)) {
+            changes.added.set(nodeLabel, newNode);
         }
-        // added node
-        changes.removed.set(nodeLabel, newNode);
     }
     return changes;
 }
@@ -5605,55 +5632,87 @@ function getFlakeRefUri(flakeRef) {
     throw new TypeError("Unsupported flake ref type");
 }
 
+// EXTERNAL MODULE: ./node_modules/@vercel/ncc/dist/ncc/@@notfound.js?assert/strict
+var strict = __nccwpck_require__(3458);
+var strict_default = /*#__PURE__*/__nccwpck_require__.n(strict);
+;// CONCATENATED MODULE: ./src/util/itererables.ts
+function transformValues(inputMap, valueTransform) {
+    function pairTransform([key, inputValue]) {
+        const outputValue = valueTransform(inputValue);
+        return [key, outputValue];
+    }
+    const inputPairs = Array.from(inputMap);
+    const outputPairs = inputPairs.map(pairTransform);
+    const mappedMap = new Map(outputPairs);
+    return mappedMap;
+}
+
 ;// CONCATENATED MODULE: ./src/report.ts
 
+
+
+/**
+ * Generate a report mentioning all updated, added and removed nodes.
+ *
+ * @param changes must not be empty
+ */
 function generateReport(changes) {
-    const nodeLabels = [changes.updated, changes.added, changes.removed]
-        .map((nodesMap) => Array.from(nodesMap.keys()))
-        .flat();
-    const quotedNodeLabels = nodeLabels
-        .map((nodeLabel) => "`" + nodeLabel + "`")
-        .join(", ");
-    // generate title
-    const title = (() => {
-        const pluralS = nodeLabels.length !== 1 ? "s" : "";
-        return `build(deps): bump flake input${pluralS} ${quotedNodeLabels}`;
-    })();
-    // generate body
-    function generateSimpleSection(title, nodes) {
-        let text = "## " + title + "\n\n";
-        for (const [nodeLabel, node] of nodes) {
-            const uri = getFlakeRefUri(node.locked);
-            text += "* **" + nodeLabel + ":** `" + uri + "`\n";
-        }
-        return text;
-    }
-    function generateDiffingSection(title, nodes) {
-        let text = "## " + title + "\n\n";
-        for (const [nodeLabel, nodeUpdate] of nodes) {
-            const oldUri = getFlakeRefUri(nodeUpdate.oldNode.locked);
-            const newUri = getFlakeRefUri(nodeUpdate.newNode.locked);
-            text += "* **" + nodeLabel + ":**\n";
-            text += "  `" + oldUri + "` →\n";
-            text += "  `" + newUri + "`\n";
-            const compareUrl = getCompareUrl(nodeUpdate.oldNode.locked, nodeUpdate.newNode.locked);
-            if (compareUrl !== undefined) {
-                text += `  __([view changes](${compareUrl}))__\n`;
-            }
-        }
-        return text;
-    }
-    let body = "";
-    if (changes.updated.size !== 0) {
-        body += generateDiffingSection("Updated Inputs", changes.updated) + "\n";
-    }
-    if (changes.added.size !== 0) {
-        body += generateSimpleSection("Added Inputs", changes.added) + "\n";
-    }
-    if (changes.removed.size !== 0) {
-        body += generateSimpleSection("Removed Inputs", changes.removed) + "\n";
-    }
+    strict_default().notEqual(changes.size, 0);
+    const title = generateTitle(changes);
+    const body = generateBody(changes);
     return { title, body };
+}
+function generateTitle(changes) {
+    const nodeLabels = changes.nodeLabels
+        .map((label) => `\`${label}\``)
+        .join(", ");
+    const inputs = changes.size === 1 ? "input" : "inputs";
+    const title = `build(deps): bump flake ${inputs} ${nodeLabels}`;
+    return title;
+}
+function generateBody(changes) {
+    let body = "";
+    body += generateBodyDiffingSection("Updated Inputs", changes.updated);
+    body += generateBodySimpleSection("Added Inputs", changes.added);
+    body += generateBodySimpleSection("Removed Inputs", changes.removed);
+    return body;
+}
+function generateBodyDiffingSection(title, nodes) {
+    const items = transformValues(nodes, (nodeUpdate) => {
+        const oldFlakeRefUri = getFlakeRefUri(nodeUpdate.oldNode.locked);
+        const newFlakeRefUri = getFlakeRefUri(nodeUpdate.newNode.locked);
+        let text = "";
+        text += "\n";
+        text += `  \`${oldFlakeRefUri}\` →\n`;
+        text += `  \`${newFlakeRefUri}\``;
+        const compareUrl = getCompareUrl(nodeUpdate.oldNode.locked, nodeUpdate.newNode.locked);
+        if (compareUrl !== undefined) {
+            text += "\n";
+            text += `  __([view changes](${compareUrl}))__`;
+        }
+        return text;
+    });
+    return generateBodySection(title, items);
+}
+function generateBodySimpleSection(title, nodes) {
+    const items = transformValues(nodes, (node) => {
+        const flakeRefUri = getFlakeRefUri(node.locked);
+        return `\`${flakeRefUri}\``;
+    });
+    return generateBodySection(title, items);
+}
+function generateBodySection(title, items) {
+    if (items.size === 0) {
+        return "";
+    }
+    let text = "";
+    text += `## ${title}\n`;
+    text += "\n";
+    for (const [label, desc] of items) {
+        text += `* __${label}:__ ${desc}\n`;
+    }
+    text += "\n";
+    return text;
 }
 function getCompareUrl(oldFlakeRef, newFlakeRef) {
     if (
@@ -5724,13 +5783,10 @@ async function main() {
     printDebug("new lockfile", newLockfile);
     // get changes between lockfiles
     const changes = compareLockfiles(oldLockfile, newLockfile);
-    const changesCount = changes.updated.size + changes.added.size + changes.removed.size;
-    if (changesCount === 0) {
+    printDebug("changes", changes);
+    if (changes.size === 0) {
         core.info("The nodes in the lockfile did not change.");
         return;
-    }
-    else {
-        printDebug("changes", changes);
     }
     // generate textual report from changes
     const report = generateReport(changes);
