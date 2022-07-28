@@ -4,6 +4,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "ncc build --target es2022 --source-map --quiet src/main.ts",
+    "build:ci": "ncc build --target es2022 --minify --quiet src/main.ts",
     "prerun": "npm run build",
     "run": "node dist/index.js",
     "format": "prettier --write .",

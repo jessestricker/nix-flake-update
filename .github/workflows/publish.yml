@@ -22,7 +22,7 @@ jobs:
         run: nix develop -i -c npm ci
 
       - name: Build
-        run: nix develop -i -c npm run build
+        run: nix develop -i -c npm run build:ci
 
       - name: Upload distribution and create tags
         uses: JasonEtco/build-and-tag-action@v2
