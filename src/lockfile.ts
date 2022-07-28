@@ -35,8 +35,13 @@ const UnsupportedFlakeRefJson = rt.Intersect(
 );
 const FlakeRefJson = rt.Union(UnsupportedFlakeRefJson, GitHubFlakeRefJson);
 type FlakeRefJson = rt.Static<typeof FlakeRefJson>;
+
+const InputsJson = rt.Dictionary(
+  rt.Union(rt.String, rt.Array(rt.String)),
+  rt.String
+);
 const NodeJson = rt.Record({
-  inputs: rt.Optional(rt.Dictionary(rt.String, rt.String)),
+  inputs: rt.Optional(InputsJson),
   locked: rt.Optional(FlakeRefJson),
   original: rt.Optional(FlakeRefJson),
   flake: rt.Optional(rt.Boolean),
