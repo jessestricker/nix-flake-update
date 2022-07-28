@@ -2,34 +2,75 @@ name: Release
 
 on:
   workflow_dispatch:
+  # TODO: un-comment below, when this workflow is finalized
+  # push: { branches: [main] }
 
 jobs:
-  release:
-    name: Build & Release
+  build:
+    name: Build Distribution
     runs-on: ubuntu-latest
+    outputs:
+      release-commit: ${{ steps.commit-and-push.outputs.commit_hash }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Get Git commit hash
-        id: get-commit
-        run: |
-          echo "::set-output name=hash::$(git rev-list --max-count=1 --abbrev-commit HEAD)"
-
       - name: Set up Nix
         uses: nixbuild/nix-quick-install-action@v16
         with:
           nix_conf: experimental-features = nix-command flakes
+
       - name: Install dependencies
         run: nix develop -i -c npm ci
-
       - name: Clean
         run: nix develop -i -c npm run clean
       - name: Build
         run: nix develop -i -c npm run build
+
+      - name: Get Git commit hash
+        id: get-commit-hash
+        run: |
+          echo "::set-output name=hash::$(git rev-list --max-count=1 --abbrev-commit HEAD)"
       - name: Commit & Push
+        id: commit-and-push
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "chore: update distribution to ${{ steps.get-commit.outputs.hash }}"
+
+  test:
+    name: Run Integration Test
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.build.outputs.release-commit }}
+      - name: Set up Nix
+        uses: nixbuild/nix-quick-install-action@v16
+        with:
+          nix_conf: experimental-features = nix-command flakes
+
+      - name: Run this action
+        id: nix-update
+        uses: ./
+
+  release:
+    name: Tag & Release
+    needs: [build, test]
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.build.outputs.release-commit }}
+      - name: Set up Nix
+        uses: nixbuild/nix-quick-install-action@v16
+        with:
+          nix_conf: experimental-features = nix-command flakes
+
+      - name: Install dependencies
+        run: nix develop -i -c npm ci
 
       - name: Release
         run: nix develop -c npx semantic-release
