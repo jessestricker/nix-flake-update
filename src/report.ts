@@ -63,13 +63,13 @@ export function generateReport(changes: LockfileChanges): Report {
 
   let body = "";
   if (changes.updated.size !== 0) {
-    body += generateDiffingSection("Updated inputs", changes.updated) + "\n";
+    body += generateDiffingSection("Updated Inputs", changes.updated) + "\n";
   }
   if (changes.added.size !== 0) {
-    body += generateSimpleSection("Added inputs", changes.added) + "\n";
+    body += generateSimpleSection("Added Inputs", changes.added) + "\n";
   }
   if (changes.removed.size !== 0) {
-    body += generateSimpleSection("Removed inputs", changes.removed) + "\n";
+    body += generateSimpleSection("Removed Inputs", changes.removed) + "\n";
   }
 
   return { title, body };
