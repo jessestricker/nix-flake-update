@@ -27,7 +27,7 @@ jobs:
         run: nix develop -i -c npm run build
 
       - name: Get Git commit hash
-        id: get-commit-hash
+        id: get-commit
         run: |
           echo "::set-output name=hash::$(git rev-list --max-count=1 --abbrev-commit HEAD)"
       - name: Commit & Push
