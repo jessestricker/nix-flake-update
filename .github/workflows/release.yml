@@ -73,6 +73,6 @@ jobs:
         run: nix develop -i -c npm ci
 
       - name: Release
-        run: nix develop -c npx semantic-release
+        run: nix develop -c npm run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
