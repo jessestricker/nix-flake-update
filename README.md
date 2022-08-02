@@ -8,8 +8,8 @@ Keep your Nix Flake inputs up-to-date with this GitHub Action!
 
 This action does two things:
 
-- update the project's `flake.lock` file
-- compare old and new lockfile to generate a textual report of changed inputs
+- updates the project's `flake.lock` file
+- compares old and new lockfile to generate a textual report of changed inputs
 
 **Note:** On its own, this action only changes a local checkout of the
 repository. This means that you need to use it in combination with another
@@ -25,7 +25,7 @@ with a `flake.lock` file. In addition to this action, it uses the awesome
 
 It updates the locked inputs every day and creates a pull request with the
 changes, just like GitHub's Dependabot. If the pull request is not merged before
-new changes are made, the pull request is automatically updated.
+new changes are made, the pull request is updated automatically.
 
 ```yaml
 on:
