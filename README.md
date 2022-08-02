@@ -45,7 +45,7 @@ jobs:
           nix_conf: experimental-features = nix-command flakes
 
       # updates `flake.lock` and generates change report
-      - uses: jessestricker/nix-flake-update@v0.1.4
+      - uses: jessestricker/nix-flake-update@v1
         id: nix-update
 
       # creates a pull request with the current changes
@@ -64,3 +64,4 @@ commits, this allows the release process to be automated.
 
 To release a new version, run the
 [Release workflow](https://github.com/jessestricker/nix-flake-update/actions/workflows/release.yml).
+Then, update the major version tag manually.
