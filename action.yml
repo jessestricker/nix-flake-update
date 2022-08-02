@@ -1,4 +1,4 @@
-name: Nix Update
+name: Nix Flake Update
 author: Jesse Stricker
 description: Keep your Nix Flake inputs up-to-date!
 branding:

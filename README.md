@@ -1,6 +1,6 @@
-# nix-update-action
+# Nix Flake Update
 
-[![Checks](https://github.com/jessestricker/nix-update-action/actions/workflows/checks.yml/badge.svg?branch=main&event=push)](https://github.com/jessestricker/nix-update-action/actions/workflows/checks.yml)
+[![Checks](https://github.com/jessestricker/nix-flake-update/actions/workflows/checks.yml/badge.svg?branch=main&event=push)](https://github.com/jessestricker/nix-flake-update/actions/workflows/checks.yml)
 
 Keep your Nix Flake inputs up-to-date with this GitHub Action!
 
@@ -45,7 +45,7 @@ jobs:
           nix_conf: experimental-features = nix-command flakes
 
       # updates `flake.lock` and generates change report
-      - uses: jessestricker/nix-update-action@v0.1.4
+      - uses: jessestricker/nix-flake-update@v0.1.4
         id: nix-update
 
       # creates a pull request with the current changes
@@ -63,4 +63,4 @@ This repository employs semantic versioning. In combination with conventional
 commits, this allows the release process to be automated.
 
 To release a new version, run the
-[Release workflow](https://github.com/jessestricker/nix-update-action/actions/workflows/release.yml).
+[Release workflow](https://github.com/jessestricker/nix-flake-update/actions/workflows/release.yml).
