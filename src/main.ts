@@ -3,8 +3,8 @@ import * as util from "util";
 
 import { compareLockfiles } from "./changes.js";
 import { loadLockfile } from "./lockfile.js";
+import * as nixFlake from "./nixFlake.js";
 import { generateReport } from "./report.js";
-import { runCommand } from "./util/command.js";
 
 async function main() {
   const projectDir = process.cwd();
@@ -14,7 +14,7 @@ async function main() {
   printDebug("old lockfile", oldLockfile);
 
   // update flake's inputs
-  await recreateLockfile(projectDir);
+  await nixFlake.update(projectDir);
 
   // read updated lockfile
   const newLockfile = await loadLockfile(projectDir);
@@ -36,14 +36,6 @@ async function main() {
   core.setOutput("commit-message", report.title);
   core.setOutput("pull-request-title", report.title);
   core.setOutput("pull-request-body", report.body);
-}
-
-async function recreateLockfile(dir: string) {
-  core.info("Updating the flake's inputs...");
-  const output = await runCommand("nix", ["flake", "update"], dir);
-  core.group("Output of `nix flake update`", async () => {
-    core.info(output.stderr);
-  });
 }
 
 export function printDebug(valueName: string, value: object) {
