@@ -2,7 +2,7 @@
 
 [![Checks](https://github.com/jessestricker/nix-flake-update/actions/workflows/checks.yml/badge.svg?branch=main&event=push)](https://github.com/jessestricker/nix-flake-update/actions/workflows/checks.yml)
 
-Keep your Nix Flake inputs up-to-date with this GitHub Action!
+❄ Keep your Nix Flake inputs up-to-date with this GitHub Action!
 
 ## Features
 
