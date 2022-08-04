@@ -1,6 +1,4 @@
-import * as core from "@actions/core";
 import * as exec from "@actions/exec";
-import * as util from "util";
 
 export interface Output {
   stdout: string;
@@ -36,9 +34,4 @@ export async function runCommand(
   }
 
   throw new Error(msg);
-}
-
-export function printDebug(valueName: string, value: object) {
-  const valueStr = util.inspect(value, { depth: null });
-  core.debug(`${valueName} = ${valueStr}`);
 }
