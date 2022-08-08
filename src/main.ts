@@ -1,30 +1,30 @@
 import * as core from "@actions/core";
-import * as util from "util";
 
 import { compareLockfiles } from "./changes.js";
 import { loadLockfile } from "./lockfile.js";
 import * as nix from "./nix.js";
 import { generateReport } from "./report.js";
+import { debugInspect } from "./util/log";
 
 async function main() {
   const projectDir = process.cwd();
   const flake = new nix.Flake(projectDir);
 
   const system = await nix.getSystem();
-  printDebug("system", system);
+  debugInspect("system", system);
 
   const outputs = await flake.show();
-  printDebug("outputs", outputs);
+  debugInspect("outputs", outputs);
   const installables = flake.mapOutputsToInstallables(outputs, system);
-  printDebug("installables", installables);
+  debugInspect("installables", installables);
 
   // get current store paths
   const oldStorePaths = await nix.getStorePaths(installables);
-  printDebug("old store paths", oldStorePaths);
+  debugInspect("old store paths", oldStorePaths);
 
   // read current lockfile
   const oldLockfile = await loadLockfile(projectDir);
-  printDebug("old lockfile", oldLockfile);
+  debugInspect("old lockfile", oldLockfile);
 
   // update flake's inputs
   core.info("Updating the flake's inputs...");
@@ -35,15 +35,15 @@ async function main() {
 
   // read updated lockfile
   const newLockfile = await loadLockfile(projectDir);
-  printDebug("new lockfile", newLockfile);
+  debugInspect("new lockfile", newLockfile);
 
   // get updated store paths
   const newStorePaths = await nix.getStorePaths(installables);
-  printDebug("new store paths", newStorePaths);
+  debugInspect("new store paths", newStorePaths);
 
   // get changes between lockfiles
   const changes = compareLockfiles(oldLockfile, newLockfile);
-  printDebug("changes", changes);
+  debugInspect("changes", changes);
   if (changes.size === 0) {
     core.info("The nodes in the lockfile did not change.");
     return;
@@ -54,17 +54,12 @@ async function main() {
 
   // generate textual report from changes
   const report = generateReport(changes);
-  printDebug("report", report);
+  debugInspect("report", report);
 
   // set outputs
   core.setOutput("commit-message", report.title);
   core.setOutput("pull-request-title", report.title);
   core.setOutput("pull-request-body", report.body);
-}
-
-export function printDebug(valueName: string, value: unknown) {
-  const valueStr = util.inspect(value, { depth: null });
-  core.debug(`${valueName} = ${valueStr}`);
 }
 
 try {
