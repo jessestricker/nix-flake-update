@@ -4,31 +4,32 @@ export class Flake {
   private dir: string;
 
   /**
-   * @param dir The directory where the flake is located.
+   * @param dir The directory containing the `flake.nix` file.
    */
   constructor(dir: string) {
     this.dir = dir;
   }
 
   /**
-   * Executes `nix flake <cmd> [args...]` and returns the output.
+   * Execute `nix flake <cmd> [args...]` and returns the output.
    */
   private async exec(
     cmd: string,
     args: string[] = []
   ): Promise<command.Output> {
     const cmdArgs = ["flake", cmd, ...args];
-    const output = await command.runCommand("nix", cmdArgs, this.dir);
-    return output;
+    const cmdOutput = await command.runCommand("nix", cmdArgs, this.dir);
+    return cmdOutput;
   }
 
   /**
-   * Updates the flake's lockfile.
+   * Update the flake's lockfile.
    */
   async update(): Promise<string> {
-    const output = await this.exec("update");
-    return output.stderr;
+    const cmdOutput = await this.exec("update");
+    return cmdOutput.stderr;
   }
+}
 
 /**
  * Get the Nix `system` string of the current Nix installation.
