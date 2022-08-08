@@ -102,50 +102,49 @@ export class Flake {
     const outputs = parseJson(cmdOutput.stdout);
     return JsonObject.check(outputs);
   }
-}
 
-interface Installable {
-  name: string;
-  drvName: string;
-  storePath: string;
-}
+  mapOutputsToInstallables(outputs: JsonObject, system: string): Installable[] {
+    const SUPPORTED_ATTRS_PATHS = [
+      ["packages", system, "default"],
+      ["devShells", system, "default"],
+      ["formatter", system],
+    ];
 
-/**
- * Filter and map a flake's output to installables.
- */
-export async function getInstallables(
-  outputs: JsonObject,
-  system: string,
-  dir: string
-): Promise<Installable[]> {
-  const SUPPORTED_INSTALLABLES = [
-    ["packages", system, "default"],
-    ["devShells", system, "default"],
-    ["formatter", system],
-  ];
-
-  const Derivation = rt.Record({
-    type: rt.Literal("derivation"),
-    name: rt.String,
-  });
-
-  const installables: Installable[] = [];
-
-  for (const nameSegments of SUPPORTED_INSTALLABLES) {
-    const derivation = queryJson(outputs, nameSegments);
-    if (!Derivation.guard(derivation)) {
-      continue;
-    }
-
-    const installableName = ".#" + nameSegments.join(".");
-    const storePath = await Nix.pathInfo(installableName, dir);
-
-    installables.push({
-      name: installableName,
-      drvName: derivation.name,
-      storePath,
+    const Derivation = rt.Record({
+      type: rt.Literal("derivation"),
+      name: rt.String,
     });
+
+    const installables = SUPPORTED_ATTRS_PATHS.filter((attrPath) => {
+      const derivation = queryJson(outputs, attrPath);
+      return Derivation.guard(derivation);
+    }).map((attrPath) => new Installable(this.dir, attrPath.join(".")));
+
+    return installables;
+  }
+}
+
+export class Installable {
+  flakeRef: string;
+  attrPath: string;
+
+  constructor(flakeRef: string, attrPath: string) {
+    this.flakeRef = flakeRef;
+    this.attrPath = attrPath;
   }
 
-  return installables;
+  toString(): string {
+    return `${this.flakeRef}#${this.attrPath}`;
+  }
+}
+
+export async function getStorePaths(
+  installables: Installable[]
+): Promise<Map<Installable, string>> {
+  const storePaths = new Map<Installable, string>();
+  for (const installable of installables) {
+    const storePath = await Nix.pathInfo(installable.toString());
+    storePaths.set(installable, storePath);
+  }
+  return storePaths;
 }

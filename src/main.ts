@@ -10,19 +10,17 @@ async function main() {
   const projectDir = process.cwd();
   const flake = new nix.Flake(projectDir);
 
-  const nixSystem = await nix.getSystem();
-  printDebug("nix system", nixSystem);
+  const system = await nix.getSystem();
+  printDebug("system", system);
 
   const outputs = await flake.show();
   printDebug("outputs", outputs);
+  const installables = flake.mapOutputsToInstallables(outputs, system);
+  printDebug("installables", installables);
 
-  // get current installables
-  const oldInstallables = await nix.getInstallables(
-    outputs,
-    nixSystem,
-    projectDir
-  );
-  printDebug("old installables", oldInstallables);
+  // get current store paths
+  const oldStorePaths = await nix.getStorePaths(installables);
+  printDebug("old store paths", oldStorePaths);
 
   // read current lockfile
   const oldLockfile = await loadLockfile(projectDir);
@@ -39,13 +37,9 @@ async function main() {
   const newLockfile = await loadLockfile(projectDir);
   printDebug("new lockfile", newLockfile);
 
-  // get updated installables
-  const newInstallables = await nix.getInstallables(
-    outputs,
-    nixSystem,
-    projectDir
-  );
-  printDebug("new installables", newInstallables);
+  // get updated store paths
+  const newStorePaths = await nix.getStorePaths(installables);
+  printDebug("new store paths", newStorePaths);
 
   // get changes between lockfiles
   const changes = compareLockfiles(oldLockfile, newLockfile);
