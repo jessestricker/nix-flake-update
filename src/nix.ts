@@ -29,4 +29,18 @@ export class Flake {
     const output = await this.exec("update");
     return output.stderr;
   }
+
+/**
+ * Get the Nix `system` string of the current Nix installation.
+ * @returns One of the values in `nixpkgs#lib.systems.flakeExposed`.
+ */
+export async function getSystem(): Promise<string> {
+  const cmdOutput = await command.runCommand("nix", [
+    "eval",
+    "--raw",
+    "--read-only",
+    "--no-update-lock-file",
+    "nixpkgs#system",
+  ]);
+  return cmdOutput.stdout;
 }

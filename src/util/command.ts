@@ -8,13 +8,13 @@ export interface Output {
 export async function runCommand(
   cmd: string,
   args: string[],
-  dir: string
+  dir?: string
 ): Promise<Output> {
-  const output = await exec.getExecOutput(cmd, args, {
-    cwd: dir,
-    silent: true,
-    ignoreReturnCode: true,
-  });
+  const options: exec.ExecOptions = { silent: true, ignoreReturnCode: true };
+  if (dir !== undefined) {
+    options.cwd = dir;
+  }
+  const output = await exec.getExecOutput(cmd, args, options);
 
   if (output.exitCode === 0) {
     return { stdout: output.stdout, stderr: output.stderr };
