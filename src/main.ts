@@ -1,6 +1,6 @@
 import * as core from "@actions/core";
 
-import { compareLockfiles } from "./changes.js";
+import { compareInstallables, compareLockfiles } from "./changes.js";
 import { loadLockfile } from "./lockfile.js";
 import * as nix from "./nix.js";
 import { generateReport } from "./report.js";
@@ -42,18 +42,22 @@ async function main() {
   debugInspect("new store paths", newStorePaths);
 
   // get changes between lockfiles
-  const changes = compareLockfiles(oldLockfile, newLockfile);
-  debugInspect("changes", changes);
-  if (changes.size === 0) {
+  const lockfileChanges = compareLockfiles(oldLockfile, newLockfile);
+  debugInspect("changes", lockfileChanges);
+  if (lockfileChanges.size === 0) {
     core.info("The nodes in the lockfile did not change.");
     return;
   }
 
   // get changes between installables
-  // TODO
+  const installableChanges = await compareInstallables(
+    installables,
+    oldStorePaths,
+    newStorePaths
+  );
 
   // generate textual report from changes
-  const report = generateReport(changes);
+  const report = generateReport(lockfileChanges, installableChanges);
   debugInspect("report", report);
 
   // set outputs

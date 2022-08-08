@@ -1,6 +1,10 @@
 import assert from "assert/strict";
 
-import { LockfileChanges, NodeUpdate } from "./changes.js";
+import {
+  InstallableChange,
+  LockfileChanges,
+  LockfileNodeUpdate,
+} from "./changes.js";
 import {
   FlakeRef,
   getFlakeRefUri,
@@ -18,14 +22,18 @@ export interface Report {
 }
 
 /**
- * Generate a report mentioning all updated, added and removed nodes.
+ * Generate a report mentioning all changed lockfile nodes
+ * and installable outputs' closures.
  *
- * @param changes must not be empty
+ * @param lockfileChanges must not be empty
  */
-export function generateReport(changes: LockfileChanges): Report {
-  assert.notEqual(changes.size, 0);
-  const title = generateTitle(changes);
-  const body = generateBody(changes);
+export function generateReport(
+  lockfileChanges: LockfileChanges,
+  installableChanges: InstallableChange[]
+): Report {
+  assert.notEqual(lockfileChanges.size, 0);
+  const title = generateTitle(lockfileChanges);
+  const body = generateBody(lockfileChanges, installableChanges);
   return { title, body };
 }
 
@@ -38,17 +46,24 @@ function generateTitle(changes: LockfileChanges): string {
   return title;
 }
 
-function generateBody(changes: LockfileChanges): string {
+function generateBody(
+  lockfileChanges: LockfileChanges,
+  installableChanges: InstallableChange[]
+): string {
   let body = "";
-  body += generateBodyDiffingSection("Updated Inputs", changes.updated);
-  body += generateBodySimpleSection("Added Inputs", changes.added);
-  body += generateBodySimpleSection("Removed Inputs", changes.removed);
+  body += generateBodyDiffingSection("Updated Inputs", lockfileChanges.updated);
+  body += generateBodySimpleSection("Added Inputs", lockfileChanges.added);
+  body += generateBodySimpleSection("Removed Inputs", lockfileChanges.removed);
+  body += generateBodyInstallablesSection(
+    "Changed Outputs",
+    installableChanges
+  );
   return body;
 }
 
 function generateBodyDiffingSection(
   title: string,
-  nodes: Map<string, NodeUpdate>
+  nodes: Map<string, LockfileNodeUpdate>
 ): string {
   const items = transformValues(nodes, (nodeUpdate) => {
     const oldFlakeRefUri = getFlakeRefUri(nodeUpdate.oldNode.locked);
@@ -93,6 +108,26 @@ function generateBodySection(
   text += "\n";
   for (const [label, desc] of items) {
     text += `* __${label}:__ ${desc}\n`;
+  }
+  text += "\n";
+  return text;
+}
+
+function generateBodyInstallablesSection(
+  title: string,
+  installableChanges: InstallableChange[]
+): string {
+  if (installableChanges.length === 0) {
+    return "";
+  }
+  let text = "";
+  text += `## ${title}\n`;
+  text += "\n";
+  for (const change of installableChanges) {
+    text += `### \`${change.installable.attrPath}\`\n`;
+    text += "```";
+    text += change.closureChange;
+    text += "```";
   }
   text += "\n";
   return text;

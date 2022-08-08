@@ -45,6 +45,23 @@ export class Nix {
     const PathInfo = rt.Record({ path: rt.String });
     return PathInfo.check(pathInfos[0]).path;
   }
+
+  /**
+   * Get text about what packages and versions were added and removed between two closures.
+   * @see {@link https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-store-diff-closures.html}
+   */
+  static async storeDiffClosures(
+    before: string,
+    after: string,
+    dir?: string
+  ): Promise<string> {
+    const cmdOutput = await command.runCommand(
+      "nix",
+      ["store", "path-info", "--no-update-lock-file", before, after],
+      dir
+    );
+    return cmdOutput.stdout;
+  }
 }
 
 /**
@@ -138,9 +155,11 @@ export class Installable {
   }
 }
 
+export type MappedStorePaths = Map<Installable, string>;
+
 export async function getStorePaths(
   installables: Installable[]
-): Promise<Map<Installable, string>> {
+): Promise<MappedStorePaths> {
   const storePaths = new Map<Installable, string>();
   for (const installable of installables) {
     const storePath = await Nix.pathInfo(installable.toString());
