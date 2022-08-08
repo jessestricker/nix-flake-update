@@ -1,13 +1,13 @@
-import * as command from "./util/command.js";
 import * as rt from "runtypes";
+
+import * as command from "./util/command.js";
 import {
   JsonArray,
   JsonObject,
   JsonValue,
   parseJson,
   queryJson,
-} from "./util/json";
-import assert from "assert/strict";
+} from "./util/json.js";
 
 /**
  * Runs `nix ...` commands.
@@ -26,14 +26,24 @@ export class Nix {
     return parseJson(cmdOutput.stdout);
   }
 
-  static async pathInfo(installable: string, dir?: string): Promise<JsonArray> {
+  /**
+   * Get the store path produced by an installable.
+   * @see {@link https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-path-info.html}
+   */
+  static async pathInfo(installable: string, dir?: string): Promise<string> {
     const cmdOutput = await command.runCommand(
       "nix",
       ["path-info", "--json", "--no-update-lock-file", installable],
       dir
     );
-    const pathInfos = parseJson(cmdOutput.stdout);
-    return JsonArray.check(pathInfos);
+
+    const pathInfos = JsonArray.check(parseJson(cmdOutput.stdout));
+    if (pathInfos.length !== 1) {
+      throw new Error("Output of `nix path-info` must be an array of length 1");
+    }
+
+    const PathInfo = rt.Record({ path: rt.String });
+    return PathInfo.check(pathInfos[0]).path;
   }
 }
 
@@ -118,7 +128,6 @@ export async function getInstallables(
     type: rt.Literal("derivation"),
     name: rt.String,
   });
-  const PathInfo = rt.Record({ path: rt.String });
 
   const installables: Installable[] = [];
 
@@ -129,11 +138,7 @@ export async function getInstallables(
     }
 
     const installableName = ".#" + nameSegments.join(".");
-    const pathInfos = await Nix.pathInfo(installableName, dir);
-    assert.equal(pathInfos.length, 1);
-
-    const pathInfo = pathInfos[0];
-    const storePath = PathInfo.check(pathInfo).path;
+    const storePath = await Nix.pathInfo(installableName, dir);
 
     installables.push({
       name: installableName,
