@@ -26,13 +26,13 @@ jobs:
         uses: ./
       - name: Write outputs to summary
         run: |
-          echo "commit-message: ${{ steps.nix-update.outputs.commit-message }}" >> $GITHUB_STEP_SUMMARY
-          echo "<hr />" >> $GITHUB_STEP_SUMMARY
+          echo 'commit-message: ${{ steps.nix-update.outputs.commit-message }}' >> $GITHUB_STEP_SUMMARY
+          echo '***' >> $GITHUB_STEP_SUMMARY
 
-          echo "title: ${{ steps.nix-update.outputs.pull-request-title }}" >> $GITHUB_STEP_SUMMARY
-          echo "<hr />" >> $GITHUB_STEP_SUMMARY
+          echo 'title: ${{ steps.nix-update.outputs.pull-request-title }}' >> $GITHUB_STEP_SUMMARY
+          echo '***' >> $GITHUB_STEP_SUMMARY
 
-          echo "${{ steps.nix-update.outputs.pull-request-body }}" >> $GITHUB_STEP_SUMMARY
+          echo '${{ steps.nix-update.outputs.pull-request-body }}' >> $GITHUB_STEP_SUMMARY
 
   format:
     name: Format
