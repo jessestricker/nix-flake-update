@@ -5,8 +5,8 @@ on:
   push: { branches: [main] }
 
 jobs:
-  build:
-    name: Build
+  test:
+    name: Build & Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,6 +21,18 @@ jobs:
         run: nix develop -i -c npm run clean
       - name: Build
         run: nix develop -i -c npm run build
+      - name: Test
+        id: nix-update
+        uses: ./
+      - name: Write outputs to summary
+        run: |
+          echo "commit-message: ${{ steps.nix-update.outputs.commit-message }}" >> $GITHUB_STEP_SUMMARY
+          echo "<hr />" >> $GITHUB_STEP_SUMMARY
+
+          echo "title: ${{ steps.nix-update.outputs.pull-request-title }}" >> $GITHUB_STEP_SUMMARY
+          echo "<hr />" >> $GITHUB_STEP_SUMMARY
+
+          echo "${{ steps.nix-update.outputs.pull-request-body }}" >> $GITHUB_STEP_SUMMARY
 
   format:
     name: Format
