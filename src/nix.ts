@@ -9,9 +9,13 @@ import {
 } from "./util/json";
 import assert from "assert/strict";
 
+/**
+ * Runs `nix ...` commands.
+ */
 export class Nix {
   /**
    * Evaluate a Nix expression.
+   * @see {@link https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-eval.html}
    */
   static async eval(expr: string, dir?: string): Promise<JsonValue> {
     const cmdOutput = await command.runCommand(
@@ -42,6 +46,9 @@ export async function getSystem(): Promise<string> {
   return rt.String.check(system);
 }
 
+/**
+ * Runs `nix flake ...` commands from the flake directory.
+ */
 export class Flake {
   private dir: string;
 
@@ -66,6 +73,7 @@ export class Flake {
 
   /**
    * Update the flake's lockfile.
+   * @see {@link https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-flake-update.html}
    */
   async update(): Promise<string> {
     const cmdOutput = await this.exec("update");
@@ -74,6 +82,7 @@ export class Flake {
 
   /**
    * Get the outputs provided by this flake.
+   * @see {@link https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-flake-show.html}
    */
   async show(): Promise<JsonObject> {
     const cmdOutput = await this.exec("show", [
