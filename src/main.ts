@@ -10,6 +10,20 @@ async function main() {
   const projectDir = process.cwd();
   const flake = new nix.Flake(projectDir);
 
+  const nixSystem = await nix.getSystem();
+  printDebug("nix system", nixSystem);
+
+  const outputs = await flake.show();
+  printDebug("outputs", outputs);
+
+  // get current installables
+  const oldInstallables = await nix.getInstallables(
+    outputs,
+    nixSystem,
+    projectDir
+  );
+  printDebug("old installables", oldInstallables);
+
   // read current lockfile
   const oldLockfile = await loadLockfile(projectDir);
   printDebug("old lockfile", oldLockfile);
@@ -25,6 +39,14 @@ async function main() {
   const newLockfile = await loadLockfile(projectDir);
   printDebug("new lockfile", newLockfile);
 
+  // get updated installables
+  const newInstallables = await nix.getInstallables(
+    outputs,
+    nixSystem,
+    projectDir
+  );
+  printDebug("new installables", newInstallables);
+
   // get changes between lockfiles
   const changes = compareLockfiles(oldLockfile, newLockfile);
   printDebug("changes", changes);
@@ -32,6 +54,9 @@ async function main() {
     core.info("The nodes in the lockfile did not change.");
     return;
   }
+
+  // get changes between installables
+  // TODO
 
   // generate textual report from changes
   const report = generateReport(changes);
@@ -43,9 +68,10 @@ async function main() {
   core.setOutput("pull-request-body", report.body);
 }
 
-export function printDebug(valueName: string, value: object) {
+export function printDebug(valueName: string, value: unknown) {
   const valueStr = util.inspect(value, { depth: null });
-  core.debug(`${valueName} = ${valueStr}`);
+  //core.debug(`${valueName} = ${valueStr}`);
+  console.debug(`${valueName} = ${valueStr}`);
 }
 
 try {
