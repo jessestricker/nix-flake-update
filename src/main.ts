@@ -70,8 +70,7 @@ async function main() {
 
 export function printDebug(valueName: string, value: unknown) {
   const valueStr = util.inspect(value, { depth: null });
-  //core.debug(`${valueName} = ${valueStr}`);
-  console.debug(`${valueName} = ${valueStr}`);
+  core.debug(`${valueName} = ${valueStr}`);
 }
 
 try {
