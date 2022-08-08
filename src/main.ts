@@ -3,18 +3,23 @@ import * as util from "util";
 
 import { compareLockfiles } from "./changes.js";
 import { loadLockfile } from "./lockfile.js";
-import * as nixFlake from "./nixFlake.js";
+import * as nix from "./nix.js";
 import { generateReport } from "./report.js";
 
 async function main() {
   const projectDir = process.cwd();
+  const flake = new nix.Flake(projectDir);
 
   // read current lockfile
   const oldLockfile = await loadLockfile(projectDir);
   printDebug("old lockfile", oldLockfile);
 
   // update flake's inputs
-  await nixFlake.update(projectDir);
+  core.info("Updating the flake's inputs...");
+  const updateLog = await flake.update();
+  core.group("Output of `nix flake update`", async () => {
+    core.info(updateLog);
+  });
 
   // read updated lockfile
   const newLockfile = await loadLockfile(projectDir);
