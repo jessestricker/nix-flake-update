@@ -57,7 +57,7 @@ export class Nix {
   ): Promise<string> {
     const cmdOutput = await command.runCommand(
       "nix",
-      ["store", "path-info", "--no-update-lock-file", before, after],
+      ["store", "diff-closures", "--no-update-lock-file", before, after],
       dir
     );
     return cmdOutput.stdout;
