@@ -55,6 +55,8 @@ jobs:
           commit-message: ${{ steps.nix-update.outputs.commit-message }}
           title: ${{ steps.nix-update.outputs.pull-request-title }}
           body: ${{ steps.nix-update.outputs.pull-request-body }}
+          labels: dependencies, nix
+          assignees: jessestricker
 ```
 
 ## Version Policy & Releases
