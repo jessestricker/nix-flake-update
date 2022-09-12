@@ -1,12 +1,14 @@
+import assert from "assert/strict";
 import equal from "fast-deep-equal/es6/index.js";
 
 import { Lockfile, Node } from "./lockfile.js";
+import { Installable, MappedStorePaths, Nix } from "./nix";
 
 /**
  * The set of updated, added and removed nodes between two lockfiles.
  */
 export class LockfileChanges {
-  updated: Map<string, NodeUpdate> = new Map();
+  updated: Map<string, LockfileNodeUpdate> = new Map();
   added: Map<string, Node> = new Map();
   removed: Map<string, Node> = new Map();
 
@@ -25,7 +27,7 @@ export class LockfileChanges {
 /**
  * The old and new versions of an updated node.
  */
-export class NodeUpdate {
+export class LockfileNodeUpdate {
   oldNode: Node;
   newNode: Node;
 
@@ -66,5 +68,30 @@ export function compareLockfiles(
     }
   }
 
+  return changes;
+}
+
+export interface InstallableChange {
+  installable: Installable;
+  closureChange: string;
+}
+
+export async function compareInstallables(
+  installables: Installable[],
+  oldStorePaths: MappedStorePaths,
+  newStorePaths: MappedStorePaths
+) {
+  const changes: InstallableChange[] = [];
+  for (const installable of installables) {
+    const oldStorePath = oldStorePaths.get(installable);
+    const newStorePath = newStorePaths.get(installable);
+    assert.ok(oldStorePath !== undefined && newStorePath !== undefined);
+
+    const closureChange = await Nix.storeDiffClosures(
+      oldStorePath,
+      newStorePath
+    );
+    changes.push({ installable, closureChange });
+  }
   return changes;
 }

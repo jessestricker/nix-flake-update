@@ -1,7 +1,8 @@
-import * as lockfile from "../src/lockfile.js";
-import * as changes from "../src/changes.js";
-import * as report from "../src/report.js";
 import fs from "fs/promises";
+
+import * as changes from "../src/changes.js";
+import * as lockfile from "../src/lockfile.js";
+import * as report from "../src/report.js";
 
 async function main() {
   const oldLockfile = lockfile.parse(
@@ -12,7 +13,7 @@ async function main() {
   );
 
   const lockfileChanges = changes.compareLockfiles(oldLockfile, newLockfile);
-  const changeReport = report.generateReport(lockfileChanges);
+  const changeReport = report.generateReport(lockfileChanges, []);
 
   console.log("=".repeat(80));
   console.log(changeReport.title);
