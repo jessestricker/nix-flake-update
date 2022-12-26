@@ -13,7 +13,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Set up Nix
-        uses: nixbuild/nix-quick-install-action@v17
+        uses: nixbuild/nix-quick-install-action@v21
         with:
           nix_conf: experimental-features = nix-command flakes
 
@@ -45,7 +45,7 @@ jobs:
         with:
           ref: ${{ needs.build.outputs.release-commit }}
       - name: Set up Nix
-        uses: nixbuild/nix-quick-install-action@v17
+        uses: nixbuild/nix-quick-install-action@v21
         with:
           nix_conf: experimental-features = nix-command flakes
 
@@ -64,7 +64,7 @@ jobs:
         with:
           ref: ${{ needs.build.outputs.release-commit }}
       - name: Set up Nix
-        uses: nixbuild/nix-quick-install-action@v17
+        uses: nixbuild/nix-quick-install-action@v21
         with:
           nix_conf: experimental-features = nix-command flakes
 
